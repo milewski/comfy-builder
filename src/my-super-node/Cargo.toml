@@ -8,4 +8,7 @@ name = "super_node"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.26.0", features = ["extension-module"] }
+pyo3 = { version = "0.24.0", features = ["extension-module", "abi3-py312"] }
+pyo3-tch = { version = "0.21.0", git = "https://github.com/LaurentMazare/tch-rs" }
+image = "0.25.8"
+zerocopy = "0.8.27"

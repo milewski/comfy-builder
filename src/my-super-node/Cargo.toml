@@ -1,0 +1,11 @@
+[package]
+name = "my-super-node"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "super_node"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.26.0", features = ["extension-module"] }

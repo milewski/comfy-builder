@@ -1,15 +1,20 @@
 mod node;
+mod tensor;
 
-use image::RgbImage;
+use crate::node::{CustomNode, ResizeImage};
+use crate::tensor::TensorWrapper;
+use candle_core::backend::BackendDevice;
+use candle_core::{Device, IndexOp, Tensor};
+use image::ImageBuffer;
 use image::imageops::FilterType;
 use pyo3::prelude::*;
-use pyo3::types::{PyByteArray, PyDict, PyTuple, PyType};
+use pyo3::types::{PyDict, PyType};
 use pyo3::{IntoPyObjectExt, Python, pymodule};
-use pyo3_tch::PyTensor;
-use pyo3_tch::tch::{Device, Kind, Tensor};
-use std::borrow::Cow;
+use rayon::prelude::*;
+use resize::Pixel::RGBF32;
+use resize::px::RGB;
+use resize::{Pixel, PixelFormat, Type};
 use zerocopy::FromZeros;
-use pyo3_tch::tch::IndexOp;
 
 struct Int {
     default: isize,
@@ -29,7 +34,8 @@ impl Example {
     }
 
     #[classmethod]
-    fn INPUT_TYPES<'a>(cls: &Bound<'a, PyType>) -> pyo3::Bound<'a, PyDict> {
+    #[pyo3(name = "INPUT_TYPES")]
+    fn input_types<'a>(cls: &Bound<'a, PyType>) -> Bound<'a, PyDict> {
         let py = cls.py();
         let out = PyDict::new(py);
         let required = PyDict::new(py);
@@ -39,19 +45,19 @@ impl Example {
 
         // width
         let width = PyDict::new(py);
-        width.set_item("default", 1024.0).unwrap();
+        width.set_item("default", 1024).unwrap();
         width.set_item("min", 0).unwrap();
-        width.set_item("max", 1024).unwrap();
-        width.set_item("step", 5).unwrap();
+        // width.set_item("max", 1024).unwrap();
+        width.set_item("step", 1).unwrap();
 
         required.set_item("width", ("INT", width)).unwrap();
 
         // width
         let height = PyDict::new(py);
-        height.set_item("default", 1024.0).unwrap();
+        height.set_item("default", 1024).unwrap();
         height.set_item("min", 0).unwrap();
-        height.set_item("max", 1024).unwrap();
-        height.set_item("step", 5).unwrap();
+        // height.set_item("max", 1024).unwrap();
+        height.set_item("step", 1).unwrap();
 
         required.set_item("height", ("INT", height)).unwrap();
 
@@ -61,111 +67,139 @@ impl Example {
     }
 
     #[classattr]
-    fn DESCRIPTION() -> &'static str {
+    #[pyo3(name = "DESCRIPTION")]
+    fn description() -> &'static str {
         "test"
     }
 
     #[classattr]
-    fn RETURN_TYPES() -> (&'static str, &'static str) {
+    #[pyo3(name = "RETURN_TYPES")]
+    fn return_types() -> (&'static str, &'static str) {
         ("INT", "IMAGE")
     }
 
     #[classattr]
-    fn FUNCTION() -> &'static str {
-        "test"
+    #[pyo3(name = "FUNCTION")]
+    fn function() -> &'static str {
+        "test_new"
     }
 
     #[classattr]
-    fn CATEGORY() -> &'static str {
+    #[pyo3(name = "CATEGORY")]
+    fn category() -> &'static str {
         "Example"
     }
 
     #[classmethod]
-    fn example(py: &Bound<PyType>) {}
-
-    #[classmethod]
-    fn test<'a>(
+    fn test_new<'a>(
         py: &'a Bound<PyType>,
-        image: PyTensor,
-        width: usize,
+        image: Bound<'a, PyAny>,
         height: usize,
-    ) -> (usize, PyTensor) {
-        println!("RECEIVED: W {:?}, H {:?}", width, height);
+        width: usize,
+    ) -> (usize, Bound<'a, PyAny>) {
+        let device = Device::Cpu;
+        let tensor: TensorWrapper<f32> = TensorWrapper::new(&image, &device);
+        let (batch, orig_h, orig_w, channels) = tensor.tensor.dims4().unwrap();
+        assert_eq!(channels, 3, "Only 3-channel (RGB) images supported");
 
-        // // image.to_device(Device::Cpu).to_kind(Kind::Float);
-        // let flat: Vec<u8> = image.contiguous().view(-1).try_into().unwrap();
-        //
-        // let image_rgb = RgbImage::from_raw(width as u32, height as u32, flat).unwrap();
-        //
-        // let resized: RgbImage =
-        //     image::imageops::resize(&image_rgb, width as u32, height as u32, FilterType::CatmullRom);
-        //
-        // let (w, h) = resized.dimensions();
-        // let mut data: Vec<f32> = Vec::with_capacity((w * h * 3) as usize);
-        //
-        // // CHW order: channels first
-        // for c in 0..3 {
-        //     for y in 0..h {
-        //         for x in 0..w {
-        //             let pixel = resized.get_pixel(x, y);
-        //             let value = pixel[c] as f32 / 255.0; // normalize 0..1
-        //             data.push(value);
-        //         }
-        //     }
-        // }
-        //
-        // let tensor = Tensor::from_slice(&data)
-        //     .view([1, h as i64, w as i64]);
+        let output_pixels_per_image = height * width * channels;
 
-        let tensor = image.to_device(Device::Cpu).to_kind(Kind::Uint8);
-        let shape = tensor.size();
-        let (c, h, w) = (shape[0] as u32, shape[1] as u32, shape[2] as u32);
+        // 🔥 Parallel: each thread returns its own resized Vec<f32>
+        let all_resized_chunks: Vec<Vec<f32>> = py.py().detach(|| {
+            (0..batch)
+                .into_par_iter()
+                .map(|b| {
+                    let img_tensor = tensor.tensor.i(b).unwrap();
+                    let img_data: Vec<f32> =
+                        img_tensor.flatten_all().unwrap().to_vec1::<f32>().unwrap();
 
-        // 2. CHW → HWC → RgbImage
-        let flat: Vec<u8> = tensor
-            .permute(&[1, 2, 0]) // CHW → HWC
-            .contiguous()
-            .view([-1])
-            .to_kind(Kind::Uint8)
-            .try_into()
-            .unwrap();
+                    resize_image_fast(
+                        &img_data,
+                        orig_w,
+                        orig_h,
+                        width,
+                        height,
+                        output_pixels_per_image,
+                    )
+                })
+                .collect()
+        });
 
-        let image_rgb = RgbImage::from_raw(w, h, flat).unwrap();
-
-        // 3. Resize
-        let resized: RgbImage = image::imageops::resize(&image_rgb, width as u32, height as u32, FilterType::CatmullRom);
-
-        // 4. HWC → CHW → Vec<f32>
-        let (w, h) = resized.dimensions();
-        let mut data: Vec<f32> = Vec::with_capacity((w*h*3) as usize);
-        for y in 0..h {
-            for x in 0..w {
-                let pixel = resized.get_pixel(x, y);
-                data.push(pixel[0] as f32 / 255.0);
-                data.push(pixel[1] as f32 / 255.0);
-                data.push(pixel[2] as f32 / 255.0);
-            }
+        // Concatenate all chunks into one Vec — sequential, but fast
+        let total_output_elements = batch * output_pixels_per_image;
+        let mut all_resized_data = Vec::with_capacity(total_output_elements);
+        for chunk in all_resized_chunks {
+            all_resized_data.extend_from_slice(&chunk);
         }
-        // 5. Vec<f32> → Tensor
-        let tensor_out = Tensor::from(&data[..]).view([3, h as i64, w as i64]);
 
-        (width + height, PyTensor(tensor_out))
+        // Build output tensor
+        let new_tensor =
+            Tensor::from_vec(all_resized_data, &[batch, height, width, channels], &device).unwrap();
+
+        let result_tensor = TensorWrapper::<f32>::from_tensor(new_tensor);
+
+        (
+            orig_w + orig_h,
+            result_tensor.to_py_tensor(py.py()).unwrap(),
+        )
     }
 }
 
-#[pymodule]
-fn super_node(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<Example>()?;
+fn register_node<T: CustomNode>(python: Python, module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add_class::<T>()?;
 
     // NODE_CLASS_MAPPINGS
-    let node_class_mappings = PyDict::new(py);
-    node_class_mappings.set_item("Example", py.get_type::<Example>())?;
-    m.add("NODE_CLASS_MAPPINGS", node_class_mappings)?;
+    let node_class_mappings = PyDict::new(python);
+    node_class_mappings.set_item("Example", python.get_type::<T>())?;
 
     // NODE_DISPLAY_NAME_MAPPINGS
-    let node_display_name_mappings = PyDict::new(py);
+    let node_display_name_mappings = PyDict::new(python);
     node_display_name_mappings.set_item("Demo", "Demo Node")?;
-    m.add("NODE_DISPLAY_NAME_MAPPINGS", node_display_name_mappings)?;
+
+    module.add("NODE_CLASS_MAPPINGS", node_class_mappings)?;
+    module.add("NODE_DISPLAY_NAME_MAPPINGS", node_display_name_mappings)?;
+    
+    Ok(())
+}
+
+#[pymodule]
+fn super_node(python: Python, module: &Bound<'_, PyModule>) -> PyResult<()> {
+    register_node::<ResizeImage>(python, module)?;
 
     Ok(())
+}
+
+fn resize_image_fast(
+    input: &[f32],
+    orig_w: usize,
+    orig_h: usize,
+    new_w: usize,
+    new_h: usize,
+    output_pixels_per_image: usize,
+) -> Vec<f32> {
+    let mut output = vec![0.0f32; output_pixels_per_image];
+
+    assert_eq!(input.len() % 3, 0, "Input length must be divisible by 3");
+    assert_eq!(output.len() % 3, 0, "Output length must be divisible by 3");
+
+    let mut resizer = resize::new(
+        orig_w,
+        orig_h,
+        new_w,
+        new_h,
+        Pixel::RGBF32,
+        Type::Lanczos3, // or Type::Nearest for speed
+    )
+    .unwrap();
+
+    let input_rgb: &[RGB<f32>] =
+        unsafe { std::slice::from_raw_parts(input.as_ptr() as *const RGB<f32>, input.len() / 3) };
+
+    let output_rgb: &mut [RGB<f32>] = unsafe {
+        std::slice::from_raw_parts_mut(output.as_mut_ptr() as *mut RGB<f32>, output.len() / 3)
+    };
+
+    resizer.resize(input_rgb, output_rgb).unwrap();
+
+    output
 }

@@ -7,8 +7,20 @@ edition = "2024"
 name = "super_node"
 crate-type = ["cdylib"]
 
+[profile.release]
+opt-level = 3        # Full optimizations
+lto = true           # Link-time optimization
+codegen-units = 1    # Better optimization (slower compile, faster runtime)
+panic = "abort"      # Slightly faster
+strip = true         # Reduce binary size (optional)
+#rustflags = ["-C", "target-cpu=native"]
+
 [dependencies]
-pyo3 = { version = "0.24.0", features = ["extension-module", "abi3-py312"] }
-pyo3-tch = { version = "0.21.0", git = "https://github.com/LaurentMazare/tch-rs" }
-image = "0.25.8"
+pyo3 = { version = "0.26.0", features = ["extension-module", "abi3-py312", ] }
 zerocopy = "0.8.27"
+candle-core = "0.9.1"
+numpy = "0.26.0"
+rayon = "1.11.0"
+resize = "0.8.8"
+bytemuck = "1.23.2"
+image = "0.25.8"

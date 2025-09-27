@@ -6,7 +6,7 @@ use pyo3::{Bound, IntoPyObject, PyAny, PyErr, PyResult, Python};
 use std::marker::PhantomData;
 use std::ops::Deref;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TensorWrapper<T = f32>
 where
     T: Element + WithDType,

@@ -158,14 +158,13 @@ fn register_node<T: CustomNode>(python: Python, module: &Bound<'_, PyModule>) ->
 
     module.add("NODE_CLASS_MAPPINGS", node_class_mappings)?;
     module.add("NODE_DISPLAY_NAME_MAPPINGS", node_display_name_mappings)?;
-    
+
     Ok(())
 }
 
 #[pymodule]
 fn super_node(python: Python, module: &Bound<'_, PyModule>) -> PyResult<()> {
     register_node::<ResizeImage>(python, module)?;
-
     Ok(())
 }
 

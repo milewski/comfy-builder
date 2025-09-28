@@ -1,7 +1,9 @@
 use crate::node::{CustomNode, DataType, InputPort, OutputPort};
 use crate::tensor::TensorWrapper;
 use candle_core::Device;
+use comfyui_macro::{OutputPort as OutputPortDerive, node};
 use indexmap::IndexMap;
+use pyo3::ffi::PyObject;
 use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods, PyTuple, PyType};
 use pyo3::{Bound, IntoPyObject, PyAny, PyErr, PyResult, Python, pyclass, pymethods};
 
@@ -37,95 +39,83 @@ impl<'a> InputPort<'a> for Input {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, OutputPortDerive)]
 pub struct Output {
     width: usize,
     height: usize,
     image: TensorWrapper,
 }
 
-impl<'a> OutputPort<'a> for Output {
-    fn get_outputs() -> IndexMap<&'static str, DataType> {
-        let mut map = IndexMap::new();
+// impl<'a> OutputPort<'a> for Output {
+//     fn get_outputs() -> IndexMap<&'static str, DataType> {
+//         let mut map = IndexMap::new();
+//         map.insert("width", DataType::Int);
+//         map.insert("height", DataType::Int);
+//         map.insert("image", DataType::Image);
+//         map
+//     }
+// }
 
-        map.insert("width", DataType::Int);
-        map.insert("height", DataType::Int);
-        map.insert("image", DataType::Image);
-
-        map
-    }
-}
-
-#[pyclass]
+// #[pyclass]
+#[node]
 pub struct ResizeImage {
     device: Device,
 }
 
-#[pymethods]
-impl ResizeImage {
-    #[new]
-    fn initialize() -> Self {
-        Self::new()
-    }
+// #[pymethods]
+// impl ResizeImage {
+//     #[new]
+//     fn initialize() -> Self {
+//         Self::new()
+//     }
+//
+//     #[classattr]
+//     #[pyo3(name = "DESCRIPTION")]
+//     fn description() -> &'static str {
+//         Self::DESCRIPTION
+//     }
+//
+//     #[classattr]
+//     #[pyo3(name = "FUNCTION")]
+//     fn function() -> &'static str {
+//         "run"
+//     }
+//
+//     #[classmethod]
+//     #[pyo3(name = "INPUT_TYPES")]
+//     fn input_types<'a>(cls: &Bound<'a, PyType>) -> PyResult<Bound<'a, PyDict>> {
+//         <<Self as CustomNode>::In as InputPort<'a>>::get_inputs(cls.py())
+//     }
+//
+//     #[classattr]
+//     #[pyo3(name = "RETURN_TYPES")]
+//     fn return_types<'a>(py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
+//         <<Self as CustomNode>::Out as OutputPort<'a>>::values().into_pyobject(py)
+//     }
+//
+//     #[classattr]
+//     #[pyo3(name = "RETURN_NAMES")]
+//     fn return_names<'a>(py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
+//         <<Self as CustomNode>::Out as OutputPort<'a>>::keys().into_pyobject(py)
+//     }
+//
+//     #[classattr]
+//     #[pyo3(name = "CATEGORY")]
+//     fn category() -> &'static str {
+//         Self::CATEGORY
+//     }
+//
+//     #[classmethod]
+//     #[pyo3(signature = (**kwargs))]
+//     pub fn run<'a>(py: &'a Bound<PyType>, kwargs: Option<&Bound<PyDict>>) -> impl IntoPyObject<'a> {
+//         println!("GOT {:?}", kwargs.unwrap().keys());
+//         let instance = Self::new();
+//         let output = instance.execute(instance.initialize_input(kwargs));
+//
+//         output.into_pyobject(py.py()).unwrap()
+//     }
+// }
 
-    #[classattr]
-    #[pyo3(name = "DESCRIPTION")]
-    fn description() -> &'static str {
-        Self::DESCRIPTION
-    }
-
-    #[classattr]
-    #[pyo3(name = "FUNCTION")]
-    fn function() -> &'static str {
-        "run"
-    }
-
-    #[classmethod]
-    #[pyo3(name = "INPUT_TYPES")]
-    fn input_types<'a>(cls: &Bound<'a, PyType>) -> PyResult<Bound<'a, PyDict>> {
-        <<Self as CustomNode>::In as InputPort<'a>>::get_inputs(cls.py())
-    }
-
-    #[classattr]
-    #[pyo3(name = "RETURN_TYPES")]
-    fn return_types<'a>(py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
-        let values = <<Self as CustomNode>::Out as OutputPort<'a>>::values();
-
-        println!("values: {:?}", values);
-
-        values.into_pyobject(py)
-    }
-
-    #[classattr]
-    #[pyo3(name = "RETURN_NAMES")]
-    fn return_names<'a>(py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
-        let keys = <<Self as CustomNode>::Out as OutputPort<'a>>::keys();
-
-        println!("keys: {:?}", keys);
-
-        keys.into_pyobject(py)
-    }
-
-    #[classattr]
-    #[pyo3(name = "CATEGORY")]
-    fn category() -> &'static str {
-        Self::CATEGORY
-    }
-
-    #[classmethod]
-    #[pyo3(signature = (**kwargs))]
-    pub fn run<'a>(py: &'a Bound<PyType>, kwargs: Option<&Bound<PyDict>>) -> impl IntoPyObject<'a> {
-        println!("GOT {:?}", kwargs.unwrap().keys());
-        let instance = Self::new();
-        let output = instance.execute(instance.initialize_input(kwargs));
-
-        output.into_pyobject(py.py()).unwrap()
-    }
-}
-
-/// A full descriptive description about `what` this node is supposed to do.
-/// This node is extremely versatile you can do whatever you want it is kind magical
-/// Category: God Nodes / Image
 impl<'a> CustomNode<'a> for ResizeImage {
     type In = Input;
     type Out = Output;
@@ -154,20 +144,20 @@ impl<'a> CustomNode<'a> for ResizeImage {
     }
 }
 
-impl<'py> IntoPyObject<'py> for Output {
-    type Target = PyTuple;
-    type Output = Bound<'py, Self::Target>;
-    type Error = PyErr;
-
-    fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
-        (
-            self.width.into_pyobject(py)?,
-            self.height.into_pyobject(py)?,
-            self.image.into_pyobject(py)?,
-        )
-            .into_pyobject(py)
-    }
-}
+// impl<'py> IntoPyObject<'py> for Output {
+//     type Target = PyTuple;
+//     type Output = Bound<'py, Self::Target>;
+//     type Error = PyErr;
+// 
+//     fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
+//         (
+//             self.width.into_pyobject(py)?,
+//             self.height.into_pyobject(py)?,
+//             self.image.into_pyobject(py)?,
+//         )
+//             .into_pyobject(py)
+//     }
+// }
 
 impl<'a> From<&'a Bound<'a, PyDict>> for Input {
     fn from(kwargs: &'a Bound<'a, PyDict>) -> Self {

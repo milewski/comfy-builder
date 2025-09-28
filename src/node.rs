@@ -51,6 +51,21 @@ pub enum DataType {
     Clip,
     Vae,
     Conditioning,
+    Custom(&'static str),
+}
+
+impl From<&str> for DataType {
+    fn from(value: &str) -> Self {
+        match value {
+            "u8" | "u16" | "u32" | "u128" | "u64" | "usize" => DataType::Int,
+            "i8" | "i16" | "i32" | "i128" | "i64" | "isize" => DataType::Int,
+            "f32" | "f64" => DataType::Float,
+            "bool" => DataType::Boolean,
+            "string" => DataType::String,
+            "TensorWrapper" => DataType::Image,
+            kind => todo!("handle more types {:?}", kind),
+        }
+    }
 }
 
 impl Display for DataType {
@@ -72,6 +87,7 @@ impl Display for DataType {
             DataType::Clip => "CLIP",
             DataType::Vae => "VAE",
             DataType::Conditioning => "CONDITIONING",
+            DataType::Custom(name) => name,
         };
 
         write!(f, "{}", value.to_string())

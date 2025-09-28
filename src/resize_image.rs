@@ -1,6 +1,7 @@
-use crate::node::CustomNode;
+use crate::node::{CustomNode, DataType, InputPort, OutputPort};
 use crate::tensor::TensorWrapper;
 use candle_core::Device;
+use indexmap::IndexMap;
 use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods, PyTuple, PyType};
 use pyo3::{Bound, IntoPyObject, PyAny, PyErr, PyResult, Python, pyclass, pymethods};
 
@@ -11,11 +12,48 @@ pub struct Input {
     image: TensorWrapper,
 }
 
+impl<'a> InputPort<'a> for Input {
+    fn get_inputs(py: Python<'a>) -> PyResult<Bound<'a, PyDict>> {
+        let out = PyDict::new(py);
+        let required = PyDict::new(py);
+
+        let width = PyDict::new(required.py());
+        width.set_item("default", 1024)?;
+        width.set_item("min", 0)?;
+        width.set_item("step", 1)?;
+
+        let height = PyDict::new(required.py());
+        height.set_item("default", 1024)?;
+        height.set_item("min", 0)?;
+        height.set_item("step", 1)?;
+
+        required.set_item("width", ("INT", width))?;
+        required.set_item("height", ("INT", height))?;
+        required.set_item("image", ("IMAGE",))?;
+
+        out.set_item("required", required)?;
+
+        Ok(out)
+    }
+}
+
 #[derive(Debug)]
 pub struct Output {
     width: usize,
     height: usize,
     image: TensorWrapper,
+}
+
+impl<'a> OutputPort<'a> for Output {
+    fn get_outputs() -> IndexMap<&'static str, DataType> {
+        let mut map = IndexMap::new();
+
+        map.insert("width", DataType::Int);
+        map.insert("height", DataType::Int);
+        map.insert("image", DataType::Image);
+
+        map
+    }
 }
 
 #[pyclass]
@@ -44,41 +82,28 @@ impl ResizeImage {
 
     #[classmethod]
     #[pyo3(name = "INPUT_TYPES")]
-    fn input_types<'a>(cls: &Bound<'a, PyType>) -> Bound<'a, PyDict> {
-        let py = cls.py();
-        let out = PyDict::new(py);
-        let required = PyDict::new(py);
-
-        // image
-        required.set_item("image", ("IMAGE",)).unwrap();
-
-        // width
-        let width = PyDict::new(py);
-        width.set_item("default", 1024).unwrap();
-        width.set_item("min", 0).unwrap();
-        // width.set_item("max", 1024).unwrap();
-        width.set_item("step", 1).unwrap();
-
-        required.set_item("width", ("INT", width)).unwrap();
-
-        // width
-        let height = PyDict::new(py);
-        height.set_item("default", 1024).unwrap();
-        height.set_item("min", 0).unwrap();
-        // height.set_item("max", 1024).unwrap();
-        height.set_item("step", 1).unwrap();
-
-        required.set_item("height", ("INT", height)).unwrap();
-
-        out.set_item("required", required).unwrap();
-
-        out
+    fn input_types<'a>(cls: &Bound<'a, PyType>) -> PyResult<Bound<'a, PyDict>> {
+        <<Self as CustomNode>::In as InputPort<'a>>::get_inputs(cls.py())
     }
 
     #[classattr]
     #[pyo3(name = "RETURN_TYPES")]
-    fn return_types(py: Python) -> PyResult<Bound<PyTuple>> {
-        ("INT", "IMAGE").into_pyobject(py)
+    fn return_types<'a>(py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
+        let values = <<Self as CustomNode>::Out as OutputPort<'a>>::values();
+
+        println!("values: {:?}", values);
+
+        values.into_pyobject(py)
+    }
+
+    #[classattr]
+    #[pyo3(name = "RETURN_NAMES")]
+    fn return_names<'a>(py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
+        let keys = <<Self as CustomNode>::Out as OutputPort<'a>>::keys();
+
+        println!("keys: {:?}", keys);
+
+        keys.into_pyobject(py)
     }
 
     #[classattr]
@@ -136,6 +161,7 @@ impl<'py> IntoPyObject<'py> for Output {
 
     fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
         (
+            self.width.into_pyobject(py)?,
             self.height.into_pyobject(py)?,
             self.image.into_pyobject(py)?,
         )

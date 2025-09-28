@@ -22,5 +22,7 @@ candle-core = "0.9.1"
 numpy = "0.26.0"
 rayon = "1.11.0"
 resize = "0.8.8"
+indexmap = "2.11.4"
 bytemuck = "1.23.2"
 image = "0.25.8"
+comfyui-macro = { path = "./comfyui-macro" }

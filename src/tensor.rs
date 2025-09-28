@@ -2,7 +2,7 @@ use candle_core::{Device, Tensor, WithDType};
 use numpy::{Element, PyArray, PyArrayDyn, PyArrayMethods, PyUntypedArrayMethods};
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::PyAnyMethods;
-use pyo3::{Bound, IntoPyObject, PyAny, PyErr, PyResult, Python};
+use pyo3::{Bound, IntoPyObject, PyAny, PyErr, Python};
 use std::marker::PhantomData;
 use std::ops::Deref;
 
@@ -41,9 +41,9 @@ where
         let shape = arr.shape().to_vec();
         let data = arr.to_vec().unwrap();
 
-        let tensor = Tensor::from_vec(data, shape, device).unwrap();
+        
 
-        tensor
+        Tensor::from_vec(data, shape, device).unwrap()
     }
 
     /// The dimension size for this tensor on each axis.

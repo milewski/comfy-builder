@@ -1,7 +1,7 @@
+use indexmap::IndexMap;
 use pyo3::types::PyDict;
-use pyo3::{Bound, IntoPyObject, PyClass};
-use std::fmt::Debug;
-
+use pyo3::{Bound, PyClass, PyResult, Python};
+use std::fmt::Display;
 // impl FromKwargs for Input {
 //     fn from_kwargs(kwargs: &Bound<PyDict>) -> Self {
 //         Self {
@@ -34,9 +34,71 @@ use std::fmt::Debug;
 //     fn from_kwargs(kwargs: &Bound<PyDict>) -> Self;
 // }
 
+pub enum DataType {
+    Int,
+    Float,
+    String,
+    Boolean,
+    Image,
+    Latent,
+    Mask,
+    Audio,
+    Noise,
+    Sampler,
+    Sigmas,
+    Guider,
+    Model,
+    Clip,
+    Vae,
+    Conditioning,
+}
+
+impl Display for DataType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value = match self {
+            DataType::Int => "INT",
+            DataType::Float => "FLOAT",
+            DataType::String => "STRING",
+            DataType::Boolean => "BOOLEAN",
+            DataType::Image => "IMAGE",
+            DataType::Latent => "LATENT",
+            DataType::Mask => "MASK",
+            DataType::Audio => "AUDIO",
+            DataType::Noise => "NOISE",
+            DataType::Sampler => "SAMPLER",
+            DataType::Sigmas => "SIGMAS",
+            DataType::Guider => "GUIDER",
+            DataType::Model => "MODEL",
+            DataType::Clip => "CLIP",
+            DataType::Vae => "VAE",
+            DataType::Conditioning => "CONDITIONING",
+        };
+
+        write!(f, "{}", value.to_string())
+    }
+}
+
+pub trait InputPort<'a>: From<&'a Bound<'a, PyDict>> {
+    fn get_inputs(py: Python<'a>) -> PyResult<Bound<'a, PyDict>>;
+}
+
+pub trait OutputPort<'a> {
+    fn get_outputs() -> IndexMap<&'static str, DataType>;
+    fn values() -> Vec<String> {
+        Self::get_outputs()
+            .into_values()
+            .map(|value| value.to_string())
+            .collect()
+    }
+
+    fn keys() -> Vec<&'static str> {
+        Self::get_outputs().into_keys().collect()
+    }
+}
+
 pub trait CustomNode<'a>: PyClass {
-    type In: From<&'a Bound<'a, PyDict>>;
-    type Out: IntoPyObject<'a>;
+    type In: InputPort<'a>;
+    type Out: OutputPort<'a>;
 
     const CATEGORY: &'static str;
     const DESCRIPTION: &'static str;

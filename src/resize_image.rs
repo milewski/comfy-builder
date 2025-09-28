@@ -2,8 +2,6 @@ use crate::node::{CustomNode, DataType, InputPort, OutputPort};
 use crate::tensor::TensorWrapper;
 use candle_core::Device;
 use comfyui_macro::{OutputPort as OutputPortDerive, node};
-use indexmap::IndexMap;
-use pyo3::ffi::PyObject;
 use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods, PyTuple, PyType};
 use pyo3::{Bound, IntoPyObject, PyAny, PyErr, PyResult, Python, pyclass, pymethods};
 
@@ -36,6 +34,34 @@ impl<'a> InputPort<'a> for Input {
         out.set_item("required", required)?;
 
         Ok(out)
+    }
+}
+
+impl<'a> From<&'a Bound<'a, PyDict>> for Input {
+    fn from(kwargs: &'a Bound<'a, PyDict>) -> Self {
+        Self {
+            image: kwargs
+                .get_item("image")
+                .unwrap()
+                .and_then(|v| v.extract::<Bound<PyAny>>().ok())
+                .map(|v| TensorWrapper::new(&v, &Device::Cpu))
+                .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("missing or invalid 'image'"))
+                .unwrap(),
+
+            width: kwargs
+                .get_item("width")
+                .unwrap()
+                .and_then(|v| v.extract::<usize>().ok())
+                .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("missing or invalid 'width'"))
+                .unwrap(),
+
+            height: kwargs
+                .get_item("height")
+                .unwrap()
+                .and_then(|v| v.extract::<usize>().ok())
+                .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("missing or invalid 'height'"))
+                .unwrap(),
+        }
     }
 }
 
@@ -148,7 +174,7 @@ impl<'a> CustomNode<'a> for ResizeImage {
 //     type Target = PyTuple;
 //     type Output = Bound<'py, Self::Target>;
 //     type Error = PyErr;
-// 
+//
 //     fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
 //         (
 //             self.width.into_pyobject(py)?,
@@ -158,31 +184,3 @@ impl<'a> CustomNode<'a> for ResizeImage {
 //             .into_pyobject(py)
 //     }
 // }
-
-impl<'a> From<&'a Bound<'a, PyDict>> for Input {
-    fn from(kwargs: &'a Bound<'a, PyDict>) -> Self {
-        Self {
-            image: kwargs
-                .get_item("image")
-                .unwrap()
-                .and_then(|v| v.extract::<Bound<PyAny>>().ok())
-                .map(|v| TensorWrapper::new(&v, &Device::Cpu))
-                .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("missing or invalid 'image'"))
-                .unwrap(),
-
-            width: kwargs
-                .get_item("width")
-                .unwrap()
-                .and_then(|v| v.extract::<usize>().ok())
-                .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("missing or invalid 'width'"))
-                .unwrap(),
-
-            height: kwargs
-                .get_item("height")
-                .unwrap()
-                .and_then(|v| v.extract::<usize>().ok())
-                .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("missing or invalid 'height'"))
-                .unwrap(),
-        }
-    }
-}

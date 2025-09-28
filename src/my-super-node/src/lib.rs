@@ -1,26 +1,19 @@
+mod custom_node;
 mod node;
 mod tensor;
 
-use crate::node::{CustomNode, ResizeImage};
+use crate::custom_node::ResizeImage;
+use crate::node::CustomNode;
 use crate::tensor::TensorWrapper;
 use candle_core::backend::BackendDevice;
 use candle_core::{Device, IndexOp, Tensor};
-use image::ImageBuffer;
-use image::imageops::FilterType;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyType};
 use pyo3::{IntoPyObjectExt, Python, pymodule};
 use rayon::prelude::*;
-use resize::Pixel::RGBF32;
 use resize::px::RGB;
 use resize::{Pixel, PixelFormat, Type};
 use zerocopy::FromZeros;
-
-struct Int {
-    default: isize,
-    min: isize,
-    max: isize,
-}
 
 #[pyclass]
 #[derive(Default)]
@@ -140,12 +133,15 @@ impl Example {
 
         (
             orig_w + orig_h,
-            result_tensor.to_py_tensor(py.py()).unwrap(),
+            result_tensor.into_pyobject(py.py()).unwrap(),
         )
     }
 }
 
-fn register_node<T: CustomNode>(python: Python, module: &Bound<'_, PyModule>) -> PyResult<()> {
+fn register_node<'a, T: CustomNode<'a>>(
+    python: Python,
+    module: &'a Bound<'a, PyModule>,
+) -> PyResult<()> {
     module.add_class::<T>()?;
 
     // NODE_CLASS_MAPPINGS

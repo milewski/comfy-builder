@@ -67,7 +67,7 @@ impl<'py, T> IntoPyObject<'py> for TensorWrapper<T>
 where
     T: Element + WithDType,
 {
-    type Target = PyArrayDyn<T>;
+    type Target = PyAny;
     type Output = Bound<'py, Self::Target>;
     type Error = PyErr;
 
@@ -75,7 +75,7 @@ where
         let tensor = self.into_tensor();
         let shape = tensor.dims();
 
-        let data = tensor
+        let data: Vec<T> = tensor
             .flatten_all()
             .map_err(|e| PyErr::new::<PyRuntimeError, _>(e.to_string()))?
             .to_vec1::<_>()
@@ -85,21 +85,24 @@ where
             .reshape(shape)
             .map_err(|e| PyErr::new::<PyRuntimeError, _>(e.to_string()))?;
 
-        Ok(array)
-    }
-}
-
-impl<T> TensorWrapper<T>
-where
-    T: Element + WithDType,
-{
-    pub fn to_py_tensor<'py>(self, py: Python<'py>) -> PyResult<Bound<'py, pyo3::PyAny>> {
-        let data = self.into_pyobject(py)?;
-
         let torch = py.import("torch")?;
-        torch.getattr("tensor")?.call1((data,))
+        let tensor = torch.getattr("tensor")?.call1((array,))?;
+
+        Ok(tensor)
     }
 }
+
+// impl<T> TensorWrapper<T>
+// where
+//     T: Element + WithDType,
+// {
+//     pub fn to_py_tensor(self, py: Python) -> PyResult<Bound<PyAny>> {
+//         let data = self.into_pyobject(py)?;
+// 
+//         let torch = py.import("torch")?;
+//         torch.getattr("tensor")?.call1((data,))
+//     }
+// }
 
 impl Deref for TensorWrapper<f32> {
     type Target = Tensor;

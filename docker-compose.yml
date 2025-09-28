@@ -2,8 +2,8 @@ services:
   comfyui:
     image: yanwk/comfyui-boot:cu129-slim
     volumes:
-      - ./src:/root/ComfyUI/custom_nodes
-      - ./src/my-super-node/target/wheels:/wheels:ro
+      - .:/root/ComfyUI/custom_nodes/my-super-node
+      - ./target/wheels:/wheels:ro
     ports:
       - "8188:8188"
     command: sh -c "pip install /wheels/my_super_node-0.1.0-cp312-abi3-manylinux_2_34_x86_64.whl --force-reinstall && bash /runner-scripts/entrypoint.sh"

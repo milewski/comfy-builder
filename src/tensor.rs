@@ -98,7 +98,7 @@ where
 // {
 //     pub fn to_py_tensor(self, py: Python) -> PyResult<Bound<PyAny>> {
 //         let data = self.into_pyobject(py)?;
-// 
+//
 //         let torch = py.import("torch")?;
 //         torch.getattr("tensor")?.call1((data,))
 //     }

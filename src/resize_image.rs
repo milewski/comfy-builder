@@ -2,7 +2,7 @@ use crate::node::CustomNode;
 use crate::tensor::TensorWrapper;
 use candle_core::Device;
 use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods, PyTuple, PyType};
-use pyo3::{Bound, IntoPyObject, PyAny, PyErr, Python, pyclass, pymethods, PyResult};
+use pyo3::{Bound, IntoPyObject, PyAny, PyErr, PyResult, Python, pyclass, pymethods};
 
 #[derive(Debug)]
 pub struct Input {

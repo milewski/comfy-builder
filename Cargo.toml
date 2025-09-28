@@ -1,10 +1,10 @@
 [package]
-name = "my-super-node"
+name = "god-nodes"
 version = "0.1.0"
 edition = "2024"
 
 [lib]
-name = "super_node"
+name = "god_nodes"
 crate-type = ["cdylib"]
 
 [profile.release]

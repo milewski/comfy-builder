@@ -658,6 +658,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "god-nodes"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "candle-core",
+ "image",
+ "numpy",
+ "pyo3",
+ "rayon",
+ "resize",
+ "zerocopy",
+]
+
+[[package]]
 name = "half"
 version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -903,20 +917,6 @@ checksum = "ddd32fa8935aeadb8a8a6b6b351e40225570a37c43de67690383d87ef170cd08"
 dependencies = [
  "num-traits",
  "pxfm",
-]
-
-[[package]]
-name = "my-super-node"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "candle-core",
- "image",
- "numpy",
- "pyo3",
- "rayon",
- "resize",
- "zerocopy",
 ]
 
 [[package]]

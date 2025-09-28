@@ -1,9 +1,9 @@
-mod custom_node;
 mod node;
+mod resize_image;
 mod tensor;
 
-use crate::custom_node::ResizeImage;
 use crate::node::CustomNode;
+use crate::resize_image::ResizeImage;
 use crate::tensor::TensorWrapper;
 use candle_core::backend::BackendDevice;
 use candle_core::{Device, IndexOp, Tensor};

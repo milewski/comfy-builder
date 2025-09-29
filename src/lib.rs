@@ -1,6 +1,7 @@
 mod node;
 mod resize_image;
 mod tensor;
+mod attributes;
 
 use crate::node::CustomNode;
 use crate::resize_image::ResizeImage;

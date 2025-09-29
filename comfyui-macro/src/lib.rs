@@ -9,6 +9,7 @@ pub fn node(_args: TokenStream, input: TokenStream) -> TokenStream {
 
     TokenStream::from(quote! {
         #[pyo3::pyclass]
+        #[derive(Default)]
         #input_struct
 
         #[pyo3::pymethods]
@@ -30,7 +31,6 @@ pub fn node(_args: TokenStream, input: TokenStream) -> TokenStream {
                 "run"
             }
 
-            // Default INPUT_TYPES implementation
             #[classmethod]
             #[pyo3(name = "INPUT_TYPES")]
             fn input_types<'a>(cls: &Bound<'a, PyType>) -> PyResult<Bound<'a, PyDict>> {

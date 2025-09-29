@@ -61,7 +61,7 @@ impl From<&str> for DataType {
             "i8" | "i16" | "i32" | "i128" | "i64" | "isize" => DataType::Int,
             "f32" | "f64" => DataType::Float,
             "bool" => DataType::Boolean,
-            "string" => DataType::String,
+            "String" => DataType::String,
             "TensorWrapper" => DataType::Image,
             kind => todo!("handle more types {:?}", kind),
         }
@@ -90,7 +90,7 @@ impl Display for DataType {
             DataType::Custom(name) => name,
         };
 
-        write!(f, "{}", value.to_string())
+        write!(f, "{}", value)
     }
 }
 
@@ -112,7 +112,7 @@ pub trait OutputPort<'a> {
     }
 }
 
-pub trait CustomNode<'a>: PyClass {
+pub trait CustomNode<'a>: PyClass + Default {
     type In: InputPort<'a>;
     type Out: OutputPort<'a>;
 
@@ -123,6 +123,9 @@ pub trait CustomNode<'a>: PyClass {
         Self::In::from(kwargs.unwrap())
     }
 
-    fn new() -> Self;
+    fn new() -> Self {
+        Self::default()
+    }
+
     fn execute(&self, input: Self::In) -> Self::Out;
 }

@@ -675,10 +675,12 @@ dependencies = [
  "comfyui-macro",
  "image",
  "indexmap",
+ "num-traits",
  "numpy",
  "pyo3",
  "rayon",
  "resize",
+ "serde_json",
  "zerocopy",
 ]
 

@@ -2,37 +2,6 @@ use indexmap::IndexMap;
 use pyo3::types::PyDict;
 use pyo3::{Bound, PyClass, PyResult, Python};
 use std::fmt::Display;
-// impl FromKwargs for Input {
-//     fn from_kwargs(kwargs: &Bound<PyDict>) -> Self {
-//         Self {
-//             image: kwargs
-//                 .get_item("image")
-//                 .unwrap()
-//                 .and_then(|v| v.extract::<Bound<PyAny>>().ok())
-//                 .map(|v| TensorWrapper::new(&v, &Device::Cpu))
-//                 .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("missing or invalid 'image'"))
-//                 .unwrap(),
-//
-//             width: kwargs
-//                 .get_item("width")
-//                 .unwrap()
-//                 .and_then(|v| v.extract::<usize>().ok())
-//                 .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("missing or invalid 'width'"))
-//                 .unwrap(),
-//
-//             height: kwargs
-//                 .get_item("height")
-//                 .unwrap()
-//                 .and_then(|v| v.extract::<usize>().ok())
-//                 .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("missing or invalid 'height'"))
-//                 .unwrap(),
-//         }
-//     }
-// }
-
-// pub trait FromKwargs {
-//     fn from_kwargs(kwargs: &Bound<PyDict>) -> Self;
-// }
 
 pub enum DataType {
     Int,
@@ -63,6 +32,7 @@ impl From<&str> for DataType {
             "bool" => DataType::Boolean,
             "String" => DataType::String,
             "TensorWrapper" => DataType::Image,
+            "HiddenUniqueId" => DataType::String,
             kind => todo!("handle more types {:?}", kind),
         }
     }

@@ -1,8 +1,9 @@
+use crate::attributes::HiddenUniqueId;
 use candle_core::{Device, Tensor, WithDType};
 use numpy::{Element, PyArray, PyArrayDyn, PyArrayMethods, PyUntypedArrayMethods};
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::PyAnyMethods;
-use pyo3::{Bound, IntoPyObject, PyAny, PyErr, Python};
+use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyErr, PyResult, Python};
 use std::marker::PhantomData;
 use std::ops::Deref;
 
@@ -40,8 +41,6 @@ where
 
         let shape = arr.shape().to_vec();
         let data = arr.to_vec().unwrap();
-
-        
 
         Tensor::from_vec(data, shape, device).unwrap()
     }
@@ -89,6 +88,17 @@ where
         let tensor = torch.getattr("tensor")?.call1((array,))?;
 
         Ok(tensor)
+    }
+}
+
+impl<'py, T> FromPyObject<'py> for TensorWrapper<T>
+where
+    T: Element + WithDType,
+{
+    fn extract_bound(object: &Bound<'py, PyAny>) -> PyResult<Self> {
+        object
+            .extract::<Bound<'py, PyAny>>()
+            .map(|value| TensorWrapper::new(&value, &Device::Cpu))
     }
 }
 

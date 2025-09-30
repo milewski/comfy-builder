@@ -1,3 +1,4 @@
+#![allow(unused_imports, unused_variables, unused_mut, unused_unsafe, dead_code)]
 mod node;
 mod resize_image;
 mod tensor;

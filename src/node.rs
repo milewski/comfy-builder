@@ -32,8 +32,11 @@ impl From<&str> for DataType {
             "bool" => DataType::Boolean,
             "String" => DataType::String,
             "TensorWrapper" => DataType::Image,
-            "HiddenUniqueId" => DataType::String,
-            kind => todo!("handle more types {:?}", kind),
+            "UniqueId" => DataType::String,
+            "Prompt" => DataType::String,
+            "DynPrompt" => DataType::String,
+            "ExtraPngInfo" => DataType::String,
+            kind => unreachable!("handle more types {:?}", kind),
         }
     }
 }
@@ -64,7 +67,7 @@ impl Display for DataType {
     }
 }
 
-pub trait InputPort<'a>: From<&'a Bound<'a, PyDict>> {
+pub trait InputPort<'a>: From<Option<&'a Bound<'a, PyDict>>> {
     fn get_inputs(py: Python<'a>) -> PyResult<Bound<'a, PyDict>>;
 }
 
@@ -90,7 +93,7 @@ pub trait CustomNode<'a>: PyClass + Default {
     const DESCRIPTION: &'static str;
 
     fn initialize_input(&'a self, kwargs: Option<&'a Bound<'a, PyDict>>) -> Self::In {
-        Self::In::from(kwargs.unwrap())
+        Self::In::from(kwargs)
     }
 
     fn new() -> Self {

@@ -1,35 +1,29 @@
-use crate::node::DataType;
-use num_traits::Num;
-use pyo3::conversion::FromPyObjectBound;
-use pyo3::prelude::PyDictMethods;
-use pyo3::types::{PyAnyMethods, PyDict};
-use pyo3::{Borrowed, Bound, FromPyObject, PyAny, PyClass, PyResult, Python};
+use pyo3::types::PyAnyMethods;
+use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyResult};
 use std::ops::Deref;
-// pub enum Kind {
-//     Required(Attribute),
-//     Optional(Attribute),
-//     Hidden { unique_id: bool, prompt: bool },
-// }
 
-#[derive(Default)]
-pub struct Int<T> {
-    pub default: T,
-    pub min: T,
-    pub max: T,
-    pub step: T,
-}
-
-#[derive(Default)]
-pub struct Boolean {
-    default: bool,
-    label_on: Option<String>,
-    label_off: Option<String>,
-}
-
+/// UNIQUE_ID is the unique identifier of the node, and matches the id property of the node on the client side.
+/// It is commonly used in client-server communications.
+/// see https://docs.comfy.org/development/comfyui-server/comms_messages#getting-node-id
 #[derive(Debug)]
-pub struct HiddenUniqueId(pub String);
+pub struct UniqueId(pub String);
 
-impl Deref for HiddenUniqueId {
+/// PROMPT is the complete prompt sent by the client to the server.
+/// See [the prompt object](https://docs.comfy.org/custom-nodes/js/javascript_objects_and_hijacking#prompt) for a full description.
+#[derive(Debug)]
+pub struct Prompt(pub String);
+
+/// EXTRA_PNGINFO is a dictionary that will be copied into the metadata of any .png files saved.
+/// Custom nodes can store additional information in this dictionary for saving (or as a way to communicate with a downstream node).
+#[derive(Debug)]
+pub struct ExtraPngInfo(pub String);
+
+/// DYNPROMPT is an instance of comfy_execution.graph.DynamicPrompt.
+/// It differs from PROMPT in that it may mutate during the course of execution in response to [Node Expansion](https://docs.comfy.org/custom-nodes/backend/expansion).
+#[derive(Debug)]
+pub struct DynPrompt(pub String);
+
+impl Deref for UniqueId {
     type Target = String;
 
     fn deref(&self) -> &Self::Target {
@@ -37,162 +31,31 @@ impl Deref for HiddenUniqueId {
     }
 }
 
-impl<'py> FromPyObject<'py> for HiddenUniqueId {
+impl<'py> FromPyObject<'py> for UniqueId {
     fn extract_bound(object: &Bound<'py, PyAny>) -> PyResult<Self> {
         object
             .extract::<String>()
-            .map(|value| HiddenUniqueId(value))
+            .map(|value| UniqueId(value))
     }
 }
 
-impl PluginHiddenAttribute for HiddenUniqueId {
-    fn get_key(&self) -> &'static str {
-        "UNIQUE_ID"
+impl<'py> FromPyObject<'py> for Prompt {
+    fn extract_bound(object: &Bound<'py, PyAny>) -> PyResult<Self> {
+        // @todo convert from dict to json string
+        Ok(Prompt(object.to_string()))
     }
 }
 
-pub trait PluginHiddenAttribute {
-    fn get_key(&self) -> &'static str;
-}
-
-#[derive(Default)]
-pub struct PluginString {
-    default: String,
-    placeholder: Option<String>,
-    multiline: bool,
-}
-
-#[derive(Default)]
-pub struct Image;
-
-// pub enum Attribute {
-//     Image {
-//         label: String,
-//     },
-//     Boolean {
-//         label: String,
-//         default: bool,
-//         label_on: Option<String>,
-//         label_off: Option<String>,
-//     },
-//     Int {
-//         label: String,
-//         default: usize,
-//         min: usize,
-//         max: usize,
-//         step: usize,
-//     },
-//     String {
-//         label: String,
-//         default: String,
-//         placeholder: Option<String>,
-//         multiline: bool,
-//     },
-// }
-
-impl PluginAttribute for Int<usize> {
-    fn to_dict<'py>(&'py self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
-        let dict = PyDict::new(py);
-
-        dict.set_item("default", &self.default)?;
-        dict.set_item("min", &self.min)?;
-        dict.set_item("max", &self.max)?;
-        dict.set_item("step", &self.step)?;
-
-        Ok(dict)
-    }
-
-    fn to_data_type(&self) -> DataType {
-        DataType::Int
+impl<'py> FromPyObject<'py> for ExtraPngInfo {
+    fn extract_bound(object: &Bound<'py, PyAny>) -> PyResult<Self> {
+        // @todo convert from dict to json string
+        Ok(ExtraPngInfo(object.to_string()))
     }
 }
 
-impl PluginAttribute for Boolean {
-    fn to_dict<'py>(&'py self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
-        let dict = PyDict::new(py);
-
-        dict.set_item("default", &self.default)?;
-        dict.set_item("label_on", &self.label_on)?;
-        dict.set_item("label_off", &self.label_off)?;
-
-        Ok(dict)
-    }
-
-    fn to_data_type(&self) -> DataType {
-        DataType::Boolean
+impl<'py> FromPyObject<'py> for DynPrompt {
+    fn extract_bound(object: &Bound<'py, PyAny>) -> PyResult<Self> {
+        // @todo convert from comfy_execution.graph.DynamicPrompt to a better format
+        Ok(DynPrompt(object.to_string()))
     }
 }
-
-pub trait PluginAttribute {
-    fn to_dict<'py>(&'py self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>>;
-    fn to_data_type(&self) -> DataType;
-}
-
-// impl Attribute {
-//     pub fn label(&self) -> String {
-//         match self {
-//             Attribute::Image { label, .. } => label.clone(),
-//             Attribute::Int { label, .. } => label.clone(),
-//             Attribute::String { label, .. } => label.clone(),
-//             Attribute::Boolean { label, .. } => label.clone(),
-//         }
-//     }
-//
-//     fn data_type(&self) -> DataType {
-//         match self {
-//             Attribute::Image { .. } => DataType::Image,
-//             Attribute::Int { .. } => DataType::Int,
-//             Attribute::String { .. } => DataType::String,
-//             Attribute::Boolean { .. } => DataType::Boolean,
-//         }
-//     }
-//
-//     fn to_dict(self, py: Python) -> PyResult<Bound<PyDict>> {
-//         let dict = PyDict::new(py);
-//
-//         match self {
-//             Attribute::Image { .. } => {}
-//             Attribute::Int {
-//                 min,
-//                 max,
-//                 step,
-//                 default,
-//                 ..
-//             } => {
-//                 dict.set_item("min", min)?;
-//                 dict.set_item("max", max)?;
-//                 dict.set_item("step", step)?;
-//                 dict.set_item("default", default)?;
-//             }
-//             Attribute::String {
-//                 placeholder,
-//                 multiline,
-//                 default,
-//                 ..
-//             } => {
-//                 dict.set_item("placeholder", placeholder)?;
-//                 dict.set_item("multiline", multiline)?;
-//                 dict.set_item("default", default)?;
-//             }
-//             Attribute::Boolean {
-//                 label_on,
-//                 label_off,
-//                 default,
-//                 ..
-//             } => {
-//                 dict.set_item("label_on", label_on)?;
-//                 dict.set_item("label_off", label_off)?;
-//                 dict.set_item("default", default)?;
-//             }
-//         }
-//
-//         Ok(dict)
-//     }
-
-// pub fn apply(self, root: &Bound<PyDict>) -> PyResult<()> {
-//     root.set_item(
-//         self.label(),
-//         (self.data_type().to_string(), self.to_dict(root.py())?),
-//     )
-// }
-// }

@@ -1,4 +1,4 @@
-use crate::attributes::HiddenUniqueId;
+use crate::attributes::UniqueId;
 use candle_core::{Device, Tensor, WithDType};
 use numpy::{Element, PyArray, PyArrayDyn, PyArrayMethods, PyUntypedArrayMethods};
 use pyo3::exceptions::PyRuntimeError;

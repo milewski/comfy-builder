@@ -1,4 +1,4 @@
-use crate::node::{CustomNode, DataType, InputPort, OutputPort};
+use crate::node::{Node, DataType, InputPort, NodeResult, OutputPort};
 use crate::tensor::Tensor;
 
 use candle_core::backend::BackendDevice;
@@ -61,7 +61,7 @@ pub struct Output {
 #[node]
 pub struct ResizeImage;
 
-impl<'a> CustomNode<'a> for ResizeImage {
+impl<'a> Node<'a> for ResizeImage {
     type In = Input;
     type Out = Output;
 
@@ -72,7 +72,7 @@ impl<'a> CustomNode<'a> for ResizeImage {
         This node is extremely versatile you can do whatever you want it is kind magical
     "#;
 
-    fn execute(&self, input: Self::In) -> Result<Self::Out, Box<dyn std::error::Error>> {
+    fn execute(&self, input: Self::In) -> NodeResult<'a, Self> {
         let device = Device::Cpu;
         let (batch, height, width, channels) = input.image.dims4()?;
 

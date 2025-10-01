@@ -23,9 +23,6 @@ pub struct ExtraPngInfo(pub String);
 #[derive(Debug)]
 pub struct DynPrompt(pub String);
 
-#[derive(Debug)]
-pub struct Combo<T>(pub T);
-
 impl Deref for UniqueId {
     type Target = String;
 

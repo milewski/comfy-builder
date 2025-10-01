@@ -93,7 +93,9 @@ pub trait OutputPort<'a> {
     }
 }
 
-pub trait CustomNode<'a>: PyClass + Default {
+pub type NodeResult<'a, T> = Result<<T as Node<'a>>::Out, Box<dyn std::error::Error>>;
+
+pub trait Node<'a>: PyClass + Default {
     type In: InputPort<'a>;
     type Out: OutputPort<'a>;
 
@@ -108,7 +110,7 @@ pub trait CustomNode<'a>: PyClass + Default {
         Self::default()
     }
 
-    fn execute(&self, input: Self::In) -> Result<Self::Out, Box<dyn std::error::Error>>;
+    fn execute(&self, input: Self::In) -> NodeResult<'a, Self>;
 }
 
 pub trait EnumVariants: From<String> {

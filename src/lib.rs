@@ -4,7 +4,7 @@ mod node;
 mod nodes;
 mod tensor;
 
-use crate::node::CustomNode;
+use crate::node::Node;
 use candle_core::backend::BackendDevice;
 use nodes::resize_image::ResizeImage;
 use pyo3::prelude::*;
@@ -14,7 +14,7 @@ use rayon::prelude::*;
 use resize::px::RGB;
 use resize::{Pixel, PixelFormat, Type};
 
-fn register_node<'a, T: CustomNode<'a>>(
+fn register_node<'a, T: Node<'a>>(
     python: Python,
     module: &'a Bound<'a, PyModule>,
 ) -> PyResult<()> {

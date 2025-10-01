@@ -1,12 +1,3 @@
-[package]
-name = "god-nodes"
-version = "0.1.0"
-edition = "2024"
-
-[lib]
-name = "god_nodes"
-crate-type = ["cdylib"]
-
 [profile.release]
 opt-level = 3
 lto = true
@@ -14,11 +5,20 @@ codegen-units = 1
 panic = "abort"
 strip = true
 
-[dependencies]
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+resolver = "3"
+members = [
+    "./packages/comfyui-macros",
+    "./packages/comfyui-plugin",
+    "./packages/comfyui-custom-nodes",
+]
+
+[workspace.dependencies]
 pyo3 = { version = "0.26.0", features = ["extension-module", "abi3-py312"] }
 candle-core = "0.9.1"
-numpy = "0.26.0"
-rayon = "1.11.0"
-resize = "0.8.8"
-indexmap = "2.11.4"
-comfyui-macro = { path = "./comfyui-macro" }
+comfyui-macro = { path = "./packages/comfyui-macros" }
+comfyui-plugin = { path = "./packages/comfyui-plugin" }

@@ -1,5 +1,5 @@
-use crate::node::{DataType, InputPort, Node, NodeResult, OutputPort};
-use crate::tensor::{Mask, Tensor};
+use comfyui_plugin::node::{DataType, InputPort, Node, NodeResult, OutputPort};
+use comfyui_plugin::tensor::{Mask, Tensor};
 
 use candle_core::backend::BackendDevice;
 use candle_core::shape::ShapeWithOneHole;

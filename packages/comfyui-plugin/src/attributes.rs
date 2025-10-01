@@ -1,5 +1,5 @@
 use pyo3::types::PyAnyMethods;
-use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyResult};
+use pyo3::{Bound, FromPyObject, PyAny, PyResult};
 use std::ops::Deref;
 
 /// UNIQUE_ID is the unique identifier of the node, and matches the id property of the node on the client side.

@@ -82,7 +82,7 @@ pub fn input_derive(input: TokenStream) -> TokenStream {
                 attributes.push(quote! {
                     let dict = pyo3::types::PyDict::new(py);
                     #options
-                    #bucket.set_item(stringify!(#attribute), (crate::node::DataType::from(stringify!(#ident)).to_string(), dict))?;
+                    #bucket.set_item(stringify!(#attribute), (comfyui_plugin::node::DataType::from(stringify!(#ident)).to_string(), dict))?;
                 })
             }
 
@@ -127,11 +127,11 @@ pub fn input_derive(input: TokenStream) -> TokenStream {
 
     TokenStream::from(quote! {
 
-        impl<'a> crate::node::InputPort<'a> for #name {
+        impl<'a> comfyui_plugin::node::InputPort<'a> for #name {
 
             fn get_inputs(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::types::PyDict>> {
 
-                use crate::node::EnumVariants;
+                use comfyui_plugin::node::EnumVariants;
 
                 let output = pyo3::types::PyDict::new(py);
                 let required = pyo3::types::PyDict::new(py);

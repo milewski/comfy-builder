@@ -6,7 +6,7 @@ services:
       - ./target/wheels:/wheels:ro
     ports:
       - "8188:8188"
-    command: sh -c "pip install /wheels/god_nodes-0.1.0-cp312-abi3-manylinux_2_34_x86_64.whl --force-reinstall && bash /runner-scripts/entrypoint.sh"
+    command: sh -c "pip install /wheels/comfyui_custom_nodes-0.1.0-cp312-abi3-manylinux_2_34_x86_64.whl --force-reinstall && bash /runner-scripts/entrypoint.sh"
     deploy:
       resources:
         reservations:
@@ -14,4 +14,3 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [ gpu ]
-

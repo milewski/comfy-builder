@@ -24,7 +24,7 @@ pub fn output_port_derive(input: TokenStream) -> TokenStream {
                     IdentKind::Optional(ident) => ident,
                 };
 
-                let token = quote! { crate::node::DataType::from(stringify!(#ident)) };
+                let token = quote! { comfyui_plugin::node::DataType::from(stringify!(#ident)) };
 
                 field_inserts.push(quote! {
                     map.insert(stringify!(#attribute), #token);
@@ -44,8 +44,8 @@ pub fn output_port_derive(input: TokenStream) -> TokenStream {
     };
 
     TokenStream::from(quote! {
-        impl<'a> crate::node::OutputPort<'a> for #name {
-            fn get_outputs() -> indexmap::IndexMap<&'static str, crate::node::DataType> {
+        impl<'a> comfyui_plugin::node::OutputPort<'a> for #name {
+            fn get_outputs() -> indexmap::IndexMap<&'static str, comfyui_plugin::node::DataType> {
                 let mut map = indexmap::IndexMap::new();
                 #(#field_inserts)*
                 map

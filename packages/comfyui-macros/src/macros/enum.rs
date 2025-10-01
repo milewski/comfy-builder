@@ -25,7 +25,7 @@ pub fn enumerates_derive(input: TokenStream) -> TokenStream {
 
     TokenStream::from(quote! {
 
-        impl crate::node::EnumVariants for #name {
+        impl comfyui_plugin::node::EnumVariants for #name {
             fn variants() -> Vec<&'static str> {
                 vec![#(#variant_names),*]
             }

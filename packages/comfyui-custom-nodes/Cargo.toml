@@ -1,0 +1,18 @@
+[package]
+name = "comfyui-custom-nodes"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "god_nodes"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3.workspace = true
+candle-core.workspace = true
+comfyui-macro.workspace = true
+comfyui-plugin.workspace = true
+
+rayon = "1.11.0"
+resize = "0.8.8"
+indexmap = "2.11.4"

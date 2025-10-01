@@ -1,11 +1,8 @@
 #![allow(unused_imports, unused_variables, unused_mut, unused_unsafe, dead_code)]
-mod attributes;
-mod node;
 mod nodes;
-mod tensor;
 
-use crate::node::Node;
 use candle_core::backend::BackendDevice;
+use comfyui_plugin::node::Node;
 use nodes::resize_image::ResizeImage;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
@@ -14,10 +11,7 @@ use rayon::prelude::*;
 use resize::px::RGB;
 use resize::{Pixel, PixelFormat, Type};
 
-fn register_node<'a, T: Node<'a>>(
-    python: Python,
-    module: &'a Bound<'a, PyModule>,
-) -> PyResult<()> {
+fn register_node<'a, T: Node<'a>>(python: Python, module: &'a Bound<'a, PyModule>) -> PyResult<()> {
     module.add_class::<T>()?;
 
     // NODE_CLASS_MAPPINGS

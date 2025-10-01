@@ -17,3 +17,8 @@ pub fn output_port_derive(input: TokenStream) -> TokenStream {
 pub fn input_derive(input: TokenStream) -> TokenStream {
     macros::input::input_derive(input)
 }
+
+#[proc_macro_derive(Enumerates)]
+pub fn enumerates_derive(input: TokenStream) -> TokenStream {
+    macros::r#enum::enumerates_derive(input)
+}

@@ -30,6 +30,27 @@ pub struct StringOption {
     placeholder: Option<String>,
 }
 
+#[derive(Debug)]
+pub struct EnumOption(bool);
+
+impl Parse for EnumOption {
+    fn parse(input: ParseStream) -> Result<Self> {
+        if let Some((ident, _)) = input.cursor().ident() {
+            if ident.to_string().as_str() == "enum" {
+                return Ok(EnumOption(true));
+            }
+        }
+
+        Ok(EnumOption(false))
+    }
+}
+
+impl Options for EnumOption {
+    fn generate_token_stream(&self) -> TokenStream {
+        TokenStream::from(quote! {})
+    }
+}
+
 impl Parse for IntOptions {
     fn parse(input: ParseStream) -> Result<Self> {
         let mut values = IntOptions::default();

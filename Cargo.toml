@@ -8,24 +8,17 @@ name = "god_nodes"
 crate-type = ["cdylib"]
 
 [profile.release]
-opt-level = 3        # Full optimizations
-lto = true           # Link-time optimization
-codegen-units = 1    # Better optimization (slower compile, faster runtime)
-panic = "abort"      # Slightly faster
-strip = true         # Reduce binary size (optional)
-#rustflags = ["-C", "target-cpu=native"]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
 
 [dependencies]
-pyo3 = { version = "0.26.0", features = ["extension-module", "abi3-py312", "serde" ] }
-zerocopy = "0.8.27"
+pyo3 = { version = "0.26.0", features = ["extension-module", "abi3-py312"] }
 candle-core = "0.9.1"
 numpy = "0.26.0"
 rayon = "1.11.0"
 resize = "0.8.8"
 indexmap = "2.11.4"
-bytemuck = "1.23.2"
-image = "0.25.8"
 comfyui-macro = { path = "./comfyui-macro" }
-serde_json = "1.0.145"
-num-traits = "0.2.19"
-serde = "1.0.228"

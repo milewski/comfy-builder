@@ -1,4 +1,4 @@
-use crate::attributes::UniqueId;
+use candle_core::shape::ShapeWithOneHole;
 use candle_core::{Device, Tensor, WithDType};
 use numpy::{Element, PyArray, PyArrayDyn, PyArrayMethods, PyUntypedArrayMethods};
 use pyo3::exceptions::PyRuntimeError;
@@ -12,7 +12,7 @@ pub struct TensorWrapper<T = f32>
 where
     T: Element + WithDType,
 {
-    pub tensor: Tensor,
+    tensor: Tensor,
     _marker: PhantomData<T>,
 }
 
@@ -102,17 +102,17 @@ where
     }
 }
 
-// impl<T> TensorWrapper<T>
-// where
-//     T: Element + WithDType,
-// {
-//     pub fn to_py_tensor(self, py: Python) -> PyResult<Bound<PyAny>> {
-//         let data = self.into_pyobject(py)?;
-//
-//         let torch = py.import("torch")?;
-//         torch.getattr("tensor")?.call1((data,))
-//     }
-// }
+impl<T: Element + WithDType> TensorWrapper<T> {
+    pub fn from_raw<U: ShapeWithOneHole>(
+        data: Vec<T>,
+        shape: U,
+        device: &Device,
+    ) -> candle_core::Result<TensorWrapper> {
+        Ok(TensorWrapper::from_tensor(Tensor::from_vec(
+            data, shape, &device,
+        )?))
+    }
+}
 
 impl Deref for TensorWrapper<f32> {
     type Target = Tensor;

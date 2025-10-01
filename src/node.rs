@@ -19,6 +19,7 @@ pub enum DataType {
     Model,
     Clip,
     Vae,
+    Combo,
     Conditioning,
     Custom(&'static str),
 }
@@ -26,16 +27,22 @@ pub enum DataType {
 impl From<&str> for DataType {
     fn from(value: &str) -> Self {
         match value {
+            // Primitive
             "u8" | "u16" | "u32" | "u128" | "u64" | "usize" => DataType::Int,
             "i8" | "i16" | "i32" | "i128" | "i64" | "isize" => DataType::Int,
             "f32" | "f64" => DataType::Float,
             "bool" => DataType::Boolean,
             "String" => DataType::String,
+
+            // Tensors
             "TensorWrapper" => DataType::Image,
+
+            // Hidden Inputs
             "UniqueId" => DataType::String,
             "Prompt" => DataType::String,
             "DynPrompt" => DataType::String,
             "ExtraPngInfo" => DataType::String,
+
             kind => unreachable!("handle more types {:?}", kind),
         }
     }
@@ -45,6 +52,7 @@ impl Display for DataType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let value = match self {
             DataType::Int => "INT",
+            DataType::Combo => "COMBO",
             DataType::Float => "FLOAT",
             DataType::String => "STRING",
             DataType::Boolean => "BOOLEAN",
@@ -101,4 +109,8 @@ pub trait CustomNode<'a>: PyClass + Default {
     }
 
     fn execute(&self, input: Self::In) -> Self::Out;
+}
+
+pub trait EnumVariants: From<String> {
+    fn variants() -> Vec<&'static str>;
 }

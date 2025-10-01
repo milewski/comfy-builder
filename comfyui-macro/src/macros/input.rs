@@ -1,11 +1,13 @@
+use crate::macros::numeric_types;
 use crate::options::{BoolOptions, IntOptions, Options, StringOption};
 use proc_macro::TokenStream;
-use proc_macro2::Ident;
-use quote::quote;
+use proc_macro2::{Ident, TokenTree};
+use quote::{quote, ToTokens};
 use syn::{
-    parse_macro_input, Data, DeriveInput, Field, Fields, GenericArgument, Meta, PathArguments, Type,
+    parse_macro_input, Data, DeriveInput, Field, Fields, GenericArgument, PathArguments, Type,
 };
 
+#[derive(Debug)]
 enum IdentKind<T> {
     Required(T),
     Optional(T),
@@ -37,15 +39,11 @@ fn get_options(ident: &Ident, field: &Field) -> proc_macro2::TokenStream {
         .attrs
         .iter()
         .find(|attr| attr.path().is_ident("attribute"))
-        .map(|attr| match &attr.meta {
-            Meta::List(meta_list) => Some(meta_list),
-            _ => None,
-        })
+        .map(|attr| attr.meta.require_list().ok().map(|meta| (attr, meta)))
         .flatten()
-        .map(|meta| meta.tokens.clone())
-        .and_then(|tokens| match ident.to_string().as_str() {
-            "u8" | "u16" | "u32" | "u128" | "u64" | "usize" | "i8" | "i16" | "i32" | "i128"
-            | "i64" | "isize" => syn::parse2::<IntOptions>(tokens)
+        .map(|(attr, meta)| (attr, meta.tokens.clone()))
+        .and_then(|(attr, tokens)| match ident.to_string().as_str() {
+            numeric_types!() => syn::parse2::<IntOptions>(tokens)
                 .ok()
                 .map(|option| option.generate_token_stream()),
             "bool" => syn::parse2::<BoolOptions>(tokens)
@@ -54,10 +52,26 @@ fn get_options(ident: &Ident, field: &Field) -> proc_macro2::TokenStream {
             "String" => syn::parse2::<StringOption>(tokens)
                 .ok()
                 .map(|option| option.generate_token_stream()),
-            _ => unreachable!("could not handle ident type {}", ident),
+            _ => None,
         })
         .unwrap_or_default()
         .into()
+}
+
+fn is_enum(field: &Field) -> bool {
+    field
+        .attrs
+        .iter()
+        .find(|attribute| attribute.meta.path().is_ident("attribute"))
+        .and_then(|attribute| {
+            attribute.meta.require_list().ok().and_then(|meta| {
+                meta.tokens
+                    .clone()
+                    .into_iter()
+                    .find(|token| matches!(token, TokenTree::Ident(ident) if ident == "enum"))
+            })
+        })
+        .is_some()
 }
 
 pub fn input_derive(input: TokenStream) -> TokenStream {
@@ -72,8 +86,8 @@ pub fn input_derive(input: TokenStream) -> TokenStream {
         _ => panic!("InputDerive only works on structs"),
     };
 
-    let mut attributes: Vec<proc_macro2::TokenStream> = vec![];
     let mut decoders: Vec<proc_macro2::TokenStream> = vec![];
+    let mut attributes: Vec<proc_macro2::TokenStream> = vec![];
 
     for field in fields {
         if let (Some(kind), Some(attribute)) = (extract_field_info(&field.ty), &field.ident) {
@@ -83,52 +97,43 @@ pub fn input_derive(input: TokenStream) -> TokenStream {
             };
 
             let options = get_options(&ident, &field);
+            let ident_str = ident.to_string();
 
-            attributes.push(quote! {
-
-                let dict = pyo3::types::PyDict::new(py);
-
-                if matches!(stringify!(#ident), "u8" | "u16" | "u32" | "u128" | "u64" | "usize" | "i8" | "i16" | "i32" | "i128" | "i64" | "isize") {
-
+            if matches!(ident_str.as_str(), numeric_types!(signed))
+                || matches!(ident_str.as_str(), numeric_types!(unsigned))
+                || matches!(ident_str.as_str(), "bool")
+                || matches!(ident_str.as_str(), "String")
+                || matches!(ident_str.as_str(), "TensorWrapper")
+            {
+                attributes.push(quote! {
+                    let dict = pyo3::types::PyDict::new(py);
                     #options
-
                     #bucket.set_item(stringify!(#attribute), (crate::node::DataType::from(stringify!(#ident)).to_string(), dict))?;
+                })
+            }
 
-                } else if matches!(stringify!(#ident), "bool") {
+            if matches!(
+                ident_str.as_str(),
+                "UniqueId" | "Prompt" | "ExtraPngInfo" | "DynPrompt"
+            ) {
+                let token = match ident_str.as_str() {
+                    "UniqueId" => "UNIQUE_ID",
+                    "Prompt" => "PROMPT",
+                    "ExtraPngInfo" => "EXTRA_PNGINFO",
+                    "DynPrompt" => "DYNPROMPT",
+                    _ => unreachable!(),
+                };
 
-                    #options
+                attributes.push(quote! {
+                    hidden.set_item(stringify!(#attribute), #token)?;
+                })
+            }
 
-                    #bucket.set_item(stringify!(#attribute), (crate::node::DataType::from(stringify!(#ident)).to_string(), dict))?;
-
-                } else if std::any::TypeId::of::<#ident>() == std::any::TypeId::of::<String>() {
-
-                    #options
-
-                    #bucket.set_item(stringify!(#attribute), (crate::node::DataType::from(stringify!(#ident)).to_string(), dict))?;
-
-                } else if std::any::TypeId::of::<#ident>() == std::any::TypeId::of::<crate::tensor::TensorWrapper>() {
-
-                    #bucket.set_item(stringify!(#attribute), (crate::node::DataType::from(stringify!(#ident)).to_string(), dict))?;
-
-                }
-
-                if std::any::TypeId::of::<#ident>() == std::any::TypeId::of::<crate::attributes::UniqueId>() {
-                    hidden.set_item(stringify!(#attribute), "UNIQUE_ID")?;
-                }
-
-                if std::any::TypeId::of::<#ident>() == std::any::TypeId::of::<crate::attributes::Prompt>() {
-                    hidden.set_item(stringify!(#attribute), "PROMPT")?;
-                }
-
-                if std::any::TypeId::of::<#ident>() == std::any::TypeId::of::<crate::attributes::ExtraPngInfo>() {
-                    hidden.set_item(stringify!(#attribute), "EXTRA_PNGINFO")?;
-                }
-
-                if std::any::TypeId::of::<#ident>() == std::any::TypeId::of::<crate::attributes::DynPrompt>() {
-                    hidden.set_item(stringify!(#attribute), "DYNPROMPT")?;
-                }
-
-            });
+            if is_enum(&field) {
+                attributes.push(quote! {
+                    #bucket.set_item(stringify!(#attribute), (#ident::variants(),))?;
+                })
+            }
 
             let extract_logic = quote! {
                 kwargs
@@ -149,7 +154,11 @@ pub fn input_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(quote! {
 
         impl<'a> crate::node::InputPort<'a> for #name {
+
             fn get_inputs(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::types::PyDict>> {
+
+                use crate::node::EnumVariants;
+
                 let output = pyo3::types::PyDict::new(py);
                 let required = pyo3::types::PyDict::new(py);
                 let optional = pyo3::types::PyDict::new(py);
@@ -162,7 +171,9 @@ pub fn input_derive(input: TokenStream) -> TokenStream {
                 output.set_item("hidden", hidden)?;
 
                 pyo3::PyResult::Ok(output)
+
             }
+
         }
 
         impl<'a> std::convert::From<Option<&'a pyo3::Bound<'a, pyo3::types::PyDict>>> for #name {

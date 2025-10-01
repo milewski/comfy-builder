@@ -91,6 +91,7 @@ dependencies = [
  "comfyui-macro",
  "comfyui-plugin",
  "indexmap",
+ "once_cell",
  "pyo3",
  "rayon",
  "resize",

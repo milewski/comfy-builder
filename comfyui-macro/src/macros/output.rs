@@ -1,6 +1,7 @@
+use crate::macros::{extract_field_info, IdentKind};
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields, Type};
+use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
 pub fn output_port_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -17,49 +18,47 @@ pub fn output_port_derive(input: TokenStream) -> TokenStream {
 
     if let Fields::Named(fields_named) = fields {
         for field in fields_named.named {
-            let field_name = field.ident.unwrap();
+            if let (Some(kind), Some(attribute)) = (extract_field_info(&field.ty), &field.ident) {
+                let ident = match kind {
+                    IdentKind::Required(ident) => ident,
+                    IdentKind::Optional(ident) => ident,
+                };
 
-            // Determine the data type based on field type
-            let data_type = match field.ty {
-                Type::Path(type_path) => {
-                    let type_str = format!("{}", quote!(#type_path));
-                    quote!(DataType::from(#type_str))
-                }
-                _ => quote!(DataType::Unknown),
-            };
+                let token = quote! { crate::node::DataType::from(stringify!(#ident)) };
 
-            field_inserts.push(quote! {
-                map.insert(stringify!(#field_name), #data_type);
-            });
+                field_inserts.push(quote! {
+                    map.insert(stringify!(#attribute), #token);
+                });
 
-            into_pyobject_fields.push(quote! {
-                self.#field_name.into_pyobject(py)?,
-            });
+                into_pyobject_fields.push(quote! {
+                    self.#attribute.into_pyobject(py)?,
+                });
+            }
         }
     }
 
-    let into_pyobject_body = if into_pyobject_fields.is_empty() {
-        quote! { Ok(PyTuple::empty(py).into_pyobject(py)?) }
+    let body = if into_pyobject_fields.is_empty() {
+        quote! { Ok(pyo3::types::PyTuple::empty(py).into_pyobject(py)?) }
     } else {
         quote! { (#(#into_pyobject_fields)*).into_pyobject(py) }
     };
 
     TokenStream::from(quote! {
-        impl<'a> OutputPort<'a> for #name {
-            fn get_outputs() -> indexmap::IndexMap<&'static str, DataType> {
+        impl<'a> crate::node::OutputPort<'a> for #name {
+            fn get_outputs() -> indexmap::IndexMap<&'static str, crate::node::DataType> {
                 let mut map = indexmap::IndexMap::new();
                 #(#field_inserts)*
                 map
             }
         }
 
-        impl<'py> IntoPyObject<'py> for #name {
-            type Target = PyTuple;
-            type Output = Bound<'py, Self::Target>;
-            type Error = PyErr;
+        impl<'py> pyo3::IntoPyObject<'py> for #name {
+            type Target = pyo3::types::PyTuple;
+            type Output = pyo3::Bound<'py, Self::Target>;
+            type Error = pyo3::PyErr;
 
-            fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
-                #into_pyobject_body
+            fn into_pyobject(self, py: pyo3::Python<'py>) -> Result<Self::Output, Self::Error> {
+                #body
             }
         }
     })

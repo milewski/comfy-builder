@@ -36,6 +36,7 @@ impl From<&str> for DataType {
 
             // Tensors
             "Tensor" => DataType::Image,
+            "Mask" => DataType::Mask,
 
             // Hidden Inputs
             "UniqueId" => DataType::String,
@@ -81,6 +82,7 @@ pub trait InputPort<'a>: From<Option<&'a Bound<'a, PyDict>>> {
 
 pub trait OutputPort<'a> {
     fn get_outputs() -> IndexMap<&'static str, DataType>;
+
     fn values() -> Vec<String> {
         Self::get_outputs()
             .into_values()

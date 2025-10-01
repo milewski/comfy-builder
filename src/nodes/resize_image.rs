@@ -1,14 +1,15 @@
-use crate::node::{Node, DataType, InputPort, NodeResult, OutputPort};
-use crate::tensor::Tensor;
+use crate::node::{DataType, InputPort, Node, NodeResult, OutputPort};
+use crate::tensor::{Mask, Tensor};
 
 use candle_core::backend::BackendDevice;
+use candle_core::shape::ShapeWithOneHole;
 use candle_core::{Device, IndexOp};
-use comfyui_macro::{node, Enumerates, InputDerive, OutputPort as OutputPortDerive};
+use comfyui_macro::{Enumerates, InputDerive, OutputPort as OutputPortDerive, node};
 use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods, PyTuple, PyType};
 use pyo3::{Bound, IntoPyObject, PyAny, PyErr, PyResult, Python};
 use rayon::prelude::*;
-use resize::px::RGB;
-use resize::{Pixel, Type};
+use resize::Pixel::{GrayF32, RGBF32};
+use resize::{PixelFormat, Type};
 use std::ops::Deref;
 
 #[derive(Debug, Default, Clone, Enumerates)]
@@ -47,15 +48,18 @@ pub struct Input {
 
     image: Tensor,
 
+    mask: Option<Mask>,
+
     #[attribute(enum)]
     interpolation: Interpolation,
 }
 
 #[derive(OutputPortDerive)]
 pub struct Output {
+    image: Tensor,
+    mask: Option<Mask>,
     width: usize,
     height: usize,
-    image: Tensor,
 }
 
 #[node]
@@ -74,25 +78,85 @@ impl<'a> Node<'a> for ResizeImage {
 
     fn execute(&self, input: Self::In) -> NodeResult<'a, Self> {
         let device = Device::Cpu;
+
+        let mask = if let Some(mask) = input.mask {
+            let (batch, mask_height, mask_width) = mask.dims3()?;
+
+            let mask = self.resize_parallel::<1, Mask, _, _, _>(
+                &mask,
+                batch,
+                mask_width,
+                mask_height,
+                input.width,
+                input.height,
+                input.interpolation.clone(),
+                || GrayF32,
+                |batch, width, height, _| (batch, height, width),
+            )?;
+
+            Some(mask)
+        } else {
+            None
+        };
+
         let (batch, height, width, channels) = input.image.dims4()?;
 
-        assert_eq!(channels, 3, "Only 3-channel (RGB) input.images supported");
+        let image = self.resize_parallel::<3, Tensor, _, _, _>(
+            &input.image,
+            batch,
+            width,
+            height,
+            input.width,
+            input.height,
+            input.interpolation.clone(),
+            || RGBF32,
+            |batch, width, height, channels| (batch, height, width, channels),
+        )?;
 
-        let output_pixels_per_image = input.width * input.height * channels;
+        Ok(Output {
+            image,
+            mask,
+            height: input.height,
+            width: input.width,
+        })
+    }
+}
+
+impl ResizeImage {
+    fn resize_parallel<'a, const CHANNELS: usize, Output, Input, Format, Shape>(
+        &self,
+        image: &Input,
+        batch: usize,
+        width: usize,
+        height: usize,
+        target_width: usize,
+        target_height: usize,
+        interpolation: Interpolation,
+        format: fn() -> Format,
+        get_shape: fn(batch: usize, width: usize, height: usize, channels: usize) -> Shape,
+    ) -> Result<Output, candle_core::Error>
+    where
+        Input: IndexOp<usize> + Send + Sync,
+        Output: Deref<Target = Input>,
+        Output: TryFrom<(Vec<f32>, Shape, &'a Device), Error = candle_core::Error>,
+        Format: PixelFormat,
+        Shape: ShapeWithOneHole,
+    {
+        let output_pixels_per_image = target_width * target_height * CHANNELS;
 
         let resized_data: Vec<Vec<f32>> = (0..batch)
             .into_par_iter()
-            .flat_map(|index| input.image.i(index))
+            .flat_map(|batch| image.i(batch))
             .flat_map(|tensor| tensor.flatten_all().and_then(|data| data.to_vec1()))
             .flat_map(|data| {
-                self.resize(
+                self.resize::<CHANNELS, Format>(
                     &data,
                     width,
                     height,
-                    input.width,
-                    input.height,
-                    output_pixels_per_image,
-                    input.interpolation.clone().into(),
+                    target_width,
+                    target_height,
+                    interpolation.clone().into(),
+                    format(),
                 )
             })
             .collect();
@@ -103,45 +167,47 @@ impl<'a> Node<'a> for ResizeImage {
             data.extend_from_slice(&chunk);
         }
 
-        Ok(Output {
-            image: Tensor::from_raw(data, &[batch, input.height, input.width, channels], &device)?,
-            height: input.height,
-            width: input.width,
-        })
+        Output::try_from((
+            data,
+            get_shape(batch, target_height, target_width, CHANNELS),
+            &Device::Cpu,
+        ))
     }
-}
 
-impl ResizeImage {
-    fn resize(
+    fn resize<const CHANNELS: usize, Format: PixelFormat>(
         &self,
         input: &[f32],
         origin_width: usize,
         origin_height: usize,
         target_width: usize,
         target_height: usize,
-        output_pixels_per_image: usize,
         r#type: Type,
+        format: Format,
     ) -> resize::Result<Vec<f32>> {
+        let output_pixels_per_image = target_width * target_height * CHANNELS;
         let mut output = vec![0.0f32; output_pixels_per_image];
-
-        assert_eq!(input.len() % 3, 0, "Input length must be divisible by 3");
-        assert_eq!(output.len() % 3, 0, "Output length must be divisible by 3");
 
         let mut resizer = resize::new(
             origin_width,
             origin_height,
             target_width,
             target_height,
-            Pixel::RGBF32,
+            format,
             r#type,
         )?;
 
-        let input_rgb: &[RGB<f32>] = unsafe {
-            std::slice::from_raw_parts(input.as_ptr() as *const RGB<f32>, input.len() / 3)
+        let input_rgb: &[Format::InputPixel] = unsafe {
+            std::slice::from_raw_parts(
+                input.as_ptr() as *const Format::InputPixel,
+                input.len() / CHANNELS,
+            )
         };
 
-        let output_rgb: &mut [RGB<f32>] = unsafe {
-            std::slice::from_raw_parts_mut(output.as_mut_ptr() as *mut RGB<f32>, output.len() / 3)
+        let output_rgb: &mut [Format::OutputPixel] = unsafe {
+            std::slice::from_raw_parts_mut(
+                output.as_mut_ptr() as *mut Format::OutputPixel,
+                output.len() / CHANNELS,
+            )
         };
 
         resizer.resize(input_rgb, output_rgb)?;

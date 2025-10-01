@@ -16,3 +16,32 @@ macro_rules! numeric_types {
 }
 
 use numeric_types;
+use proc_macro2::Ident;
+use syn::{GenericArgument, PathArguments, Type};
+
+#[derive(Debug)]
+enum IdentKind<T> {
+    Required(T),
+    Optional(T),
+}
+
+fn extract_field_info(ty: &Type) -> Option<IdentKind<&Ident>> {
+    if let Type::Path(path) = ty {
+        if let Some(ident) = path.path.get_ident() {
+            return Some(IdentKind::Required(ident));
+        }
+
+        if path.path.segments.len() == 1 && path.path.segments[0].ident == "Option" {
+            if let PathArguments::AngleBracketed(angle) = &path.path.segments[0].arguments {
+                if let Some(GenericArgument::Type(inner_ty)) = angle.args.first() {
+                    if let Type::Path(inner_path) = inner_ty {
+                        if let Some(ident) = inner_path.path.get_ident() {
+                            return Some(IdentKind::Optional(ident));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
+}

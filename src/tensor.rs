@@ -8,6 +8,17 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 
 #[derive(Clone, Debug)]
+pub struct Mask<T: Element + WithDType = f32>(Tensor<T>);
+
+impl<T: Element + WithDType> Deref for Mask<T> {
+    type Target = CandleTensor;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0.tensor
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct Tensor<T = f32>
 where
     T: Element + WithDType,
@@ -91,6 +102,19 @@ where
     }
 }
 
+impl<'py, T> IntoPyObject<'py> for Mask<T>
+where
+    T: Element + WithDType,
+{
+    type Target = PyAny;
+    type Output = Bound<'py, Self::Target>;
+    type Error = PyErr;
+
+    fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
+        self.0.into_pyobject(py)
+    }
+}
+
 impl<T: Element + WithDType> Tensor<T> {
     pub fn from_raw<U: ShapeWithOneHole>(
         data: Vec<T>,
@@ -100,6 +124,22 @@ impl<T: Element + WithDType> Tensor<T> {
         Ok(Tensor::from_tensor(CandleTensor::from_vec(
             data, shape, device,
         )?))
+    }
+}
+
+impl<T: Element + WithDType, S: ShapeWithOneHole> TryFrom<(Vec<T>, S, &Device)> for Tensor {
+    type Error = candle_core::Error;
+
+    fn try_from(value: (Vec<T>, S, &Device)) -> Result<Self, Self::Error> {
+        Tensor::from_raw(value.0, value.1, value.2)
+    }
+}
+
+impl<T: Element + WithDType, S: ShapeWithOneHole> TryFrom<(Vec<T>, S, &Device)> for Mask {
+    type Error = candle_core::Error;
+
+    fn try_from(value: (Vec<T>, S, &Device)) -> Result<Self, Self::Error> {
+        Ok(Mask(Tensor::from_raw(value.0, value.1, value.2)?))
     }
 }
 
@@ -119,5 +159,19 @@ where
         object
             .extract::<Bound<'py, PyAny>>()
             .map(|value| Tensor::new(&value, &Device::Cpu))
+    }
+}
+
+impl<'py, T: Element + WithDType> FromPyObject<'py> for Mask<T> {
+    fn extract_bound(object: &Bound<'py, PyAny>) -> PyResult<Self> {
+        object
+            .extract::<Bound<'py, PyAny>>()
+            .map(|value| Tensor::new(&value, &Device::Cpu).into())
+    }
+}
+
+impl<T: Element + WithDType> From<Tensor<T>> for Mask<T> {
+    fn from(tensor: Tensor<T>) -> Self {
+        Mask(tensor)
     }
 }

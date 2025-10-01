@@ -1,38 +1,9 @@
-use crate::macros::numeric_types;
+use crate::macros::{extract_field_info, numeric_types, IdentKind};
 use crate::options::{BoolOptions, IntOptions, Options, StringOption};
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, TokenTree};
-use quote::{quote};
-use syn::{
-    parse_macro_input, Data, DeriveInput, Field, Fields, GenericArgument, PathArguments, Type,
-};
-
-#[derive(Debug)]
-enum IdentKind<T> {
-    Required(T),
-    Optional(T),
-}
-
-fn extract_field_info(ty: &Type) -> Option<IdentKind<&Ident>> {
-    if let Type::Path(path) = ty {
-        if let Some(ident) = path.path.get_ident() {
-            return Some(IdentKind::Required(ident));
-        }
-
-        if path.path.segments.len() == 1 && path.path.segments[0].ident == "Option" {
-            if let PathArguments::AngleBracketed(angle) = &path.path.segments[0].arguments {
-                if let Some(GenericArgument::Type(inner_ty)) = angle.args.first() {
-                    if let Type::Path(inner_path) = inner_ty {
-                        if let Some(ident) = inner_path.path.get_ident() {
-                            return Some(IdentKind::Optional(ident));
-                        }
-                    }
-                }
-            }
-        }
-    }
-    None
-}
+use quote::quote;
+use syn::{parse_macro_input, Data, DeriveInput, Field, Fields};
 
 fn get_options(ident: &Ident, field: &Field) -> proc_macro2::TokenStream {
     field
@@ -106,6 +77,7 @@ pub fn input_derive(input: TokenStream) -> TokenStream {
                 || matches!(ident_str.as_str(), "bool")
                 || matches!(ident_str.as_str(), "String")
                 || matches!(ident_str.as_str(), "Tensor")
+                || matches!(ident_str.as_str(), "Mask")
             {
                 attributes.push(quote! {
                     let dict = pyo3::types::PyDict::new(py);

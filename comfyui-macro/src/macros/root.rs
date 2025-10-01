@@ -32,19 +32,19 @@ pub fn node(_: TokenStream, input: TokenStream) -> TokenStream {
 
             #[classmethod]
             #[pyo3(name = "INPUT_TYPES")]
-            fn __input_types<'a>(cls: &Bound<'a, PyType>) -> PyResult<Bound<'a, PyDict>> {
+            fn __input_types<'a>(cls: &pyo3::Bound<'a, pyo3::types::PyType>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::types::PyDict>> {
                 <<Self as CustomNode>::In as InputPort<'a>>::get_inputs(cls.py())
             }
 
             #[classattr]
             #[pyo3(name = "RETURN_TYPES")]
-            fn __return_types<'a>(py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
+            fn __return_types<'a>(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::PyAny>> {
                 <<Self as CustomNode>::Out as OutputPort<'a>>::values().into_pyobject(py)
             }
 
             #[classattr]
             #[pyo3(name = "RETURN_NAMES")]
-            fn __return_names<'a>(py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
+            fn __return_names<'a>(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::PyAny>> {
                 <<Self as CustomNode>::Out as OutputPort<'a>>::keys().into_pyobject(py)
             }
 
@@ -56,10 +56,13 @@ pub fn node(_: TokenStream, input: TokenStream) -> TokenStream {
 
             #[classmethod]
             #[pyo3(signature = (**kwargs))]
-            pub fn __run<'a>(py: &'a pyo3::Bound<pyo3::types::PyType>, kwargs: Option<&pyo3::Bound<pyo3::types::PyDict>>) -> impl pyo3::IntoPyObject<'a> {
+            pub fn __run<'a>(py: &'a pyo3::Bound<pyo3::types::PyType>, kwargs: Option<&pyo3::Bound<pyo3::types::PyDict>>) -> pyo3::PyResult<impl pyo3::IntoPyObject<'a>> {
                 let instance = Self::new();
-                let output = instance.execute(instance.initialize_input(kwargs));
-                output.into_pyobject(py.py()).unwrap()
+                let output = instance.execute(instance.initialize_input(kwargs)).map_err(|error| {
+                    pyo3::exceptions::PyRuntimeError::new_err(format!("Execution failed: {}", error))
+                })?;
+
+                Ok(output.into_pyobject(py.py())?)
             }
         }
     })

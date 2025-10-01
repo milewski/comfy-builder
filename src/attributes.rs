@@ -38,7 +38,7 @@ impl<'py> FromPyObject<'py> for UniqueId {
     fn extract_bound(object: &Bound<'py, PyAny>) -> PyResult<Self> {
         object
             .extract::<String>()
-            .map(|value| UniqueId(value))
+            .map(UniqueId)
     }
 }
 

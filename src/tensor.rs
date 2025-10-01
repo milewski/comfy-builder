@@ -1,5 +1,5 @@
 use candle_core::shape::ShapeWithOneHole;
-use candle_core::{Device, Tensor, WithDType};
+use candle_core::{Device, Tensor as CandleTensor, WithDType};
 use numpy::{Element, PyArray, PyArrayDyn, PyArrayMethods, PyUntypedArrayMethods};
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::PyAnyMethods;
@@ -8,15 +8,15 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 
 #[derive(Clone, Debug)]
-pub struct TensorWrapper<T = f32>
+pub struct Tensor<T = f32>
 where
     T: Element + WithDType,
 {
-    tensor: Tensor,
+    tensor: CandleTensor,
     _marker: PhantomData<T>,
 }
 
-impl<T> TensorWrapper<T>
+impl<T> Tensor<T>
 where
     T: Element + WithDType,
 {
@@ -29,7 +29,7 @@ where
         }
     }
 
-    fn torch_to_candle<'py>(torch_tensor: &Bound<'py, PyAny>, device: &Device) -> Tensor {
+    fn torch_to_candle<'py>(torch_tensor: &Bound<'py, PyAny>, device: &Device) -> CandleTensor {
         let mut np = torch_tensor.call_method0("numpy").unwrap();
 
         let mut arr = np.downcast::<PyArrayDyn<T>>().unwrap();
@@ -42,7 +42,7 @@ where
         let shape = arr.shape().to_vec();
         let data = arr.to_vec().unwrap();
 
-        Tensor::from_vec(data, shape, device).unwrap()
+        CandleTensor::from_vec(data, shape, device).unwrap()
     }
 
     /// The dimension size for this tensor on each axis.
@@ -50,19 +50,19 @@ where
         self.tensor.dims()
     }
 
-    pub fn from_tensor(tensor: Tensor) -> Self {
+    pub fn from_tensor(tensor: CandleTensor) -> Self {
         Self {
             tensor,
             _marker: PhantomData,
         }
     }
 
-    pub fn into_tensor(self) -> Tensor {
+    pub fn into_tensor(self) -> CandleTensor {
         self.tensor
     }
 }
 
-impl<'py, T> IntoPyObject<'py> for TensorWrapper<T>
+impl<'py, T> IntoPyObject<'py> for Tensor<T>
 where
     T: Element + WithDType,
 {
@@ -91,33 +91,33 @@ where
     }
 }
 
-impl<'py, T> FromPyObject<'py> for TensorWrapper<T>
+impl<T: Element + WithDType> Tensor<T> {
+    pub fn from_raw<U: ShapeWithOneHole>(
+        data: Vec<T>,
+        shape: U,
+        device: &Device,
+    ) -> candle_core::Result<Tensor> {
+        Ok(Tensor::from_tensor(CandleTensor::from_vec(
+            data, shape, device,
+        )?))
+    }
+}
+
+impl<T: Element + WithDType> Deref for Tensor<T> {
+    type Target = CandleTensor;
+
+    fn deref(&self) -> &Self::Target {
+        &self.tensor
+    }
+}
+
+impl<'py, T> FromPyObject<'py> for Tensor<T>
 where
     T: Element + WithDType,
 {
     fn extract_bound(object: &Bound<'py, PyAny>) -> PyResult<Self> {
         object
             .extract::<Bound<'py, PyAny>>()
-            .map(|value| TensorWrapper::new(&value, &Device::Cpu))
-    }
-}
-
-impl<T: Element + WithDType> TensorWrapper<T> {
-    pub fn from_raw<U: ShapeWithOneHole>(
-        data: Vec<T>,
-        shape: U,
-        device: &Device,
-    ) -> candle_core::Result<TensorWrapper> {
-        Ok(TensorWrapper::from_tensor(Tensor::from_vec(
-            data, shape, &device,
-        )?))
-    }
-}
-
-impl Deref for TensorWrapper<f32> {
-    type Target = Tensor;
-
-    fn deref(&self) -> &Self::Target {
-        &self.tensor
+            .map(|value| Tensor::new(&value, &Device::Cpu))
     }
 }

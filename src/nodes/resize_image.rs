@@ -1,19 +1,19 @@
-use crate::attributes::Combo;
 use crate::node::{CustomNode, DataType, InputPort, OutputPort};
-use crate::tensor::TensorWrapper;
+use crate::tensor::Tensor;
+
 use candle_core::backend::BackendDevice;
-use candle_core::{CudaDevice, Device, IndexOp};
-use comfyui_macro::{Enumerates, InputDerive, OutputPort as OutputPortDerive, node};
-use pyo3::conversion::FromPyObjectBound;
-use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods, PyList, PyTuple, PyType};
-use pyo3::{Borrowed, Bound, FromPyObject, IntoPyObject, PyAny, PyErr, PyResult, Python};
+use candle_core::{Device, IndexOp};
+use comfyui_macro::{node, Enumerates, InputDerive, OutputPort as OutputPortDerive};
+use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods, PyTuple, PyType};
+use pyo3::{Bound, IntoPyObject, PyAny, PyErr, PyResult, Python};
 use rayon::prelude::*;
 use resize::px::RGB;
 use resize::{Pixel, Type};
 use std::ops::Deref;
 
-#[derive(Debug, Clone, Enumerates)]
+#[derive(Debug, Default, Clone, Enumerates)]
 enum Interpolation {
+    #[default]
     Lanczos3,
     Point,
     Triangle,
@@ -45,9 +45,9 @@ pub struct Input {
     #[attribute(min = 0, step = 1, default = 1024)]
     height: usize,
 
-    image: TensorWrapper,
+    image: Tensor,
 
-    #[attribute(enum, min = 1)]
+    #[attribute(enum)]
     interpolation: Interpolation,
 }
 
@@ -55,7 +55,7 @@ pub struct Input {
 pub struct Output {
     width: usize,
     height: usize,
-    image: TensorWrapper,
+    image: Tensor,
 }
 
 #[node]
@@ -72,9 +72,9 @@ impl<'a> CustomNode<'a> for ResizeImage {
         This node is extremely versatile you can do whatever you want it is kind magical
     "#;
 
-    fn execute(&self, input: Self::In) -> Self::Out {
+    fn execute(&self, input: Self::In) -> Result<Self::Out, Box<dyn std::error::Error>> {
         let device = Device::Cpu;
-        let (batch, height, width, channels) = input.image.dims4().unwrap();
+        let (batch, height, width, channels) = input.image.dims4()?;
 
         assert_eq!(channels, 3, "Only 3-channel (RGB) input.images supported");
 
@@ -103,16 +103,11 @@ impl<'a> CustomNode<'a> for ResizeImage {
             data.extend_from_slice(&chunk);
         }
 
-        Output {
-            image: TensorWrapper::from_raw(
-                data,
-                &[batch, input.height, input.width, channels],
-                &device,
-            )
-            .unwrap(),
+        Ok(Output {
+            image: Tensor::from_raw(data, &[batch, input.height, input.width, channels], &device)?,
             height: input.height,
             width: input.width,
-        }
+        })
     }
 }
 

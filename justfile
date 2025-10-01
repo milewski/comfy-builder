@@ -13,6 +13,9 @@ docker:
     docker compose restart
     docker compose logs -f
 
+clippy:
+    cargo clippy --fix --allow-dirty
+
 try:
     just build
     just install

@@ -2,7 +2,7 @@ use crate::macros::numeric_types;
 use crate::options::{BoolOptions, IntOptions, Options, StringOption};
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, TokenTree};
-use quote::{quote, ToTokens};
+use quote::{quote};
 use syn::{
     parse_macro_input, Data, DeriveInput, Field, Fields, GenericArgument, PathArguments, Type,
 };
@@ -38,18 +38,20 @@ fn get_options(ident: &Ident, field: &Field) -> proc_macro2::TokenStream {
     field
         .attrs
         .iter()
-        .find(|attr| attr.path().is_ident("attribute"))
-        .map(|attr| attr.meta.require_list().ok().map(|meta| (attr, meta)))
+        .find(|attribute| attribute.path().is_ident("attribute"))
+        .map(|attribute| attribute.meta.require_list().ok())
         .flatten()
-        .map(|(attr, meta)| (attr, meta.tokens.clone()))
-        .and_then(|(attr, tokens)| match ident.to_string().as_str() {
-            numeric_types!() => syn::parse2::<IntOptions>(tokens)
+        .and_then(|attribute| match ident.to_string().as_str() {
+            numeric_types!() => attribute
+                .parse_args::<IntOptions>()
                 .ok()
                 .map(|option| option.generate_token_stream()),
-            "bool" => syn::parse2::<BoolOptions>(tokens)
+            "bool" => attribute
+                .parse_args::<BoolOptions>()
                 .ok()
                 .map(|option| option.generate_token_stream()),
-            "String" => syn::parse2::<StringOption>(tokens)
+            "String" => attribute
+                .parse_args::<StringOption>()
                 .ok()
                 .map(|option| option.generate_token_stream()),
             _ => None,
@@ -103,7 +105,7 @@ pub fn input_derive(input: TokenStream) -> TokenStream {
                 || matches!(ident_str.as_str(), numeric_types!(unsigned))
                 || matches!(ident_str.as_str(), "bool")
                 || matches!(ident_str.as_str(), "String")
-                || matches!(ident_str.as_str(), "TensorWrapper")
+                || matches!(ident_str.as_str(), "Tensor")
             {
                 attributes.push(quote! {
                     let dict = pyo3::types::PyDict::new(py);

@@ -35,7 +35,7 @@ impl From<&str> for DataType {
             "String" => DataType::String,
 
             // Tensors
-            "TensorWrapper" => DataType::Image,
+            "Tensor" => DataType::Image,
 
             // Hidden Inputs
             "UniqueId" => DataType::String,
@@ -108,7 +108,7 @@ pub trait CustomNode<'a>: PyClass + Default {
         Self::default()
     }
 
-    fn execute(&self, input: Self::In) -> Self::Out;
+    fn execute(&self, input: Self::In) -> Result<Self::Out, Box<dyn std::error::Error>>;
 }
 
 pub trait EnumVariants: From<String> {

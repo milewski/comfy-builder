@@ -18,9 +18,9 @@ name = "comfy_builder_custom_nodes"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3.workspace = true
-candle-core.workspace = true
-comfy-builder-core.workspace = true
+pyo3 = { version = "0.26.0", features = ["extension-module", "abi3-py312"] }
+candle-core = { version = "0.9.1" }
+comfy-builder-core = { version = "0.0.1" }
 
 rayon = "1.11.0"
 resize = "0.8.8"

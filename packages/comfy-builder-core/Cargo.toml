@@ -17,9 +17,9 @@ rust-version.workspace = true
 name = "comfy_builder_core"
 
 [dependencies]
-pyo3.workspace = true
-candle-core.workspace = true
-comfy-builder-macros.workspace = true
+pyo3 = { version = "0.26.0", features = ["extension-module", "abi3-py312"] }
+candle-core = { version = "0.9.1" }
+comfy-builder-macros = { version = "0.0.1" }
 numpy = "0.26.0"
 indexmap = "2.11.4"
 inventory = "0.3.21"

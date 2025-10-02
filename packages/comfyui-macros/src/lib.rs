@@ -5,20 +5,20 @@ mod options;
 
 #[proc_macro_attribute]
 pub fn node(arguments: TokenStream, input: TokenStream) -> TokenStream {
-    macros::root::node(arguments, input)
+    macros::node::node(arguments, input)
 }
 
-#[proc_macro_derive(OutputPort)]
-pub fn output_port_derive(input: TokenStream) -> TokenStream {
-    macros::output::output_port_derive(input)
+#[proc_macro_derive(NodeOutput)]
+pub fn node_output_derive(input: TokenStream) -> TokenStream {
+    macros::output::node_output_derive(input)
 }
 
-#[proc_macro_derive(InputDerive, attributes(attribute))]
-pub fn input_derive(input: TokenStream) -> TokenStream {
-    macros::input::input_derive(input)
+#[proc_macro_derive(NodeInput, attributes(attribute))]
+pub fn node_input_derive(input: TokenStream) -> TokenStream {
+    macros::input::node_input_derive(input)
 }
 
-#[proc_macro_derive(Enumerates)]
-pub fn enumerates_derive(input: TokenStream) -> TokenStream {
-    macros::r#enum::enumerates_derive(input)
+#[proc_macro_derive(Enum)]
+pub fn enum_derive(input: TokenStream) -> TokenStream {
+    macros::r#enum::enum_derive(input)
 }

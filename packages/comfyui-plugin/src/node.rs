@@ -44,13 +44,13 @@ impl From<&str> for DataType {
             "DynPrompt" => DataType::String,
             "ExtraPngInfo" => DataType::String,
 
-            kind => unreachable!("handle more types {:?}", kind),
+            kind => todo!("handle more types {:?}", kind),
         }
     }
 }
 
 impl Display for DataType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let value = match self {
             DataType::Int => "INT",
             DataType::Combo => "COMBO",
@@ -72,7 +72,7 @@ impl Display for DataType {
             DataType::Custom(name) => name,
         };
 
-        write!(f, "{}", value)
+        write!(formatter, "{}", value)
     }
 }
 

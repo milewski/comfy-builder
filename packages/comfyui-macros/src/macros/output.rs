@@ -3,7 +3,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
-pub fn output_port_derive(input: TokenStream) -> TokenStream {
+pub fn node_output_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident;
 
@@ -44,6 +44,8 @@ pub fn output_port_derive(input: TokenStream) -> TokenStream {
     };
 
     TokenStream::from(quote! {
+        use pyo3::prelude::*;
+
         impl<'a> comfyui_plugin::node::OutputPort<'a> for #name {
             fn get_outputs() -> indexmap::IndexMap<&'static str, comfyui_plugin::node::DataType> {
                 let mut map = indexmap::IndexMap::new();

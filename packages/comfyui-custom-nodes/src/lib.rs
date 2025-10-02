@@ -1,7 +1,7 @@
 #![allow(unused_imports, unused_variables, unused_mut, unused_unsafe, dead_code)]
 mod nodes;
 
-use crate::nodes::example::Example;
+use crate::nodes::example::Sum;
 use candle_core::backend::BackendDevice;
 use comfyui_plugin::node::Node;
 use nodes::resize_image::ResizeImage;
@@ -42,8 +42,8 @@ fn god_nodes(python: Python, module: &Bound<'_, PyModule>) -> PyResult<()> {
         &node_class_mappings,
         &node_display_name_mappings,
     )?;
-    
-    register_node::<Example>(
+
+    register_node::<Sum>(
         python,
         module,
         &node_class_mappings,

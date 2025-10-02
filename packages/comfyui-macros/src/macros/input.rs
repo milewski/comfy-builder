@@ -34,7 +34,7 @@ fn is_enum(field: &Field) -> bool {
         .is_some()
 }
 
-pub fn input_derive(input: TokenStream) -> TokenStream {
+pub fn node_input_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
 
@@ -113,6 +113,9 @@ pub fn input_derive(input: TokenStream) -> TokenStream {
     }
 
     TokenStream::from(quote! {
+
+        use comfyui_plugin::node::InputPort;
+        use pyo3::prelude::*;
 
         impl<'a> comfyui_plugin::node::InputPort<'a> for #name {
 

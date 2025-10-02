@@ -1,18 +1,12 @@
-use comfyui_plugin::node::{DataType, InputPort, Node, NodeResult, OutputPort};
-use comfyui_plugin::tensor::{Mask, Tensor};
-
-use candle_core::backend::BackendDevice;
-use candle_core::shape::ShapeWithOneHole;
+use std::ops::Deref;
 use candle_core::{Device, IndexOp};
-use comfyui_macro::{Enumerates, InputDerive, OutputPort as OutputPortDerive, node};
-use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods, PyTuple, PyType};
-use pyo3::{Bound, IntoPyObject, PyAny, PyErr, PyResult, Python};
+use candle_core::shape::ShapeWithOneHole;
 use rayon::prelude::*;
 use resize::Pixel::{GrayF32, RGBF32};
 use resize::{PixelFormat, Type};
-use std::ops::Deref;
+use comfyui_plugin::prelude::*;
 
-#[derive(Debug, Default, Clone, Enumerates)]
+#[derive(Debug, Default, Clone, Enum)]
 enum Interpolation {
     #[default]
     Lanczos3,
@@ -38,7 +32,7 @@ impl From<Interpolation> for Type {
     }
 }
 
-#[derive(Debug, InputDerive)]
+#[derive(Debug, NodeInput)]
 pub struct Input {
     #[attribute(min = 0, step = 1, default = 1024)]
     width: usize,
@@ -54,7 +48,7 @@ pub struct Input {
     interpolation: Interpolation,
 }
 
-#[derive(OutputPortDerive)]
+#[derive(NodeOutput)]
 pub struct Output {
     image: Tensor,
     mask: Option<Mask>,
@@ -69,11 +63,10 @@ impl<'a> Node<'a> for ResizeImage {
     type In = Input;
     type Out = Output;
 
-    const CATEGORY: &'static str = "God Nodes / Image";
+    const CATEGORY: &'static str = "Rust Nodes / Image";
 
     const DESCRIPTION: &'static str = r#"
-        A full descriptive description about `what` this node is supposed to do.
-        This node is extremely versatile you can do whatever you want it is kind magical
+        Advanced image and mask resizing node with support for multiple interpolation methods.
     "#;
 
     fn execute(&self, input: Self::In) -> NodeResult<'a, Self> {

@@ -7,6 +7,8 @@ pub fn node(_: TokenStream, input: TokenStream) -> TokenStream {
     let struct_name = &input_struct.ident;
 
     TokenStream::from(quote! {
+        use pyo3::prelude::*;
+
         #[pyo3::pyclass]
         #[derive(std::default::Default)]
         #input_struct
@@ -33,19 +35,19 @@ pub fn node(_: TokenStream, input: TokenStream) -> TokenStream {
             #[classmethod]
             #[pyo3(name = "INPUT_TYPES")]
             fn __input_types<'a>(cls: &pyo3::Bound<'a, pyo3::types::PyType>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::types::PyDict>> {
-                <<Self as comfyui_plugin::node::Node>::In as InputPort<'a>>::get_inputs(cls.py())
+                <<Self as comfyui_plugin::node::Node>::In as comfyui_plugin::node::InputPort<'a>>::get_inputs(cls.py())
             }
 
             #[classattr]
             #[pyo3(name = "RETURN_TYPES")]
             fn __return_types<'a>(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::PyAny>> {
-                <<Self as comfyui_plugin::node::Node>::Out as OutputPort<'a>>::values().into_pyobject(py)
+                <<Self as comfyui_plugin::node::Node>::Out as comfyui_plugin::node::OutputPort<'a>>::values().into_pyobject(py)
             }
 
             #[classattr]
             #[pyo3(name = "RETURN_NAMES")]
             fn __return_names<'a>(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::PyAny>> {
-                <<Self as comfyui_plugin::node::Node>::Out as OutputPort<'a>>::keys().into_pyobject(py)
+                <<Self as comfyui_plugin::node::Node>::Out as comfyui_plugin::node::OutputPort<'a>>::keys().into_pyobject(py)
             }
 
             #[classattr]

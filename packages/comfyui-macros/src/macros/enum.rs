@@ -2,13 +2,13 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Data, DataEnum, DeriveInput};
 
-pub fn enumerates_derive(input: TokenStream) -> TokenStream {
+pub fn enum_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
 
     let variants = match &input.data {
         Data::Enum(DataEnum { variants, .. }) => variants,
-        _ => panic!("Enumerates can only be derived for enums"),
+        _ => panic!("Enum can only be derived for enums."),
     };
 
     let variant_names: Vec<_> = variants
@@ -24,6 +24,7 @@ pub fn enumerates_derive(input: TokenStream) -> TokenStream {
         .collect();
 
     TokenStream::from(quote! {
+        use pyo3::prelude::*;
 
         impl comfyui_plugin::node::EnumVariants for #name {
             fn variants() -> Vec<&'static str> {

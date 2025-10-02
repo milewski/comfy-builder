@@ -1,32 +1,19 @@
-use crate::macros::{extract_field_info, numeric_types, IdentKind};
-use crate::options::{BoolOptions, IntOptions, Options, StringOption};
+use crate::macros::{IdentKind, extract_field_info, numeric_types};
+use crate::options::{AnyOption, Options};
 use proc_macro::TokenStream;
-use proc_macro2::{Ident, TokenTree};
+use proc_macro2::{TokenTree};
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Field, Fields};
+use syn::{Data, DeriveInput, Field, Fields, parse_macro_input};
 
-fn get_options(ident: &Ident, field: &Field) -> proc_macro2::TokenStream {
+fn get_all_options(field: &Field) -> proc_macro2::TokenStream {
     field
         .attrs
         .iter()
         .find(|attribute| attribute.path().is_ident("attribute"))
         .map(|attribute| attribute.meta.require_list().ok())
         .flatten()
-        .and_then(|attribute| match ident.to_string().as_str() {
-            numeric_types!() => attribute
-                .parse_args::<IntOptions>()
-                .ok()
-                .map(|option| option.generate_token_stream()),
-            "bool" => attribute
-                .parse_args::<BoolOptions>()
-                .ok()
-                .map(|option| option.generate_token_stream()),
-            "String" => attribute
-                .parse_args::<StringOption>()
-                .ok()
-                .map(|option| option.generate_token_stream()),
-            _ => None,
-        })
+        .and_then(|meta| meta.parse_args::<AnyOption>().ok())
+        .map(|option| option.generate_token_stream())
         .unwrap_or_default()
         .into()
 }
@@ -36,13 +23,13 @@ fn is_enum(field: &Field) -> bool {
         .attrs
         .iter()
         .find(|attribute| attribute.meta.path().is_ident("attribute"))
-        .and_then(|attribute| {
-            attribute.meta.require_list().ok().and_then(|meta| {
-                meta.tokens
-                    .clone()
-                    .into_iter()
-                    .find(|token| matches!(token, TokenTree::Ident(ident) if ident == "enum"))
-            })
+        .map(|attribute| attribute.meta.require_list().ok())
+        .flatten()
+        .and_then(|meta| {
+            meta.tokens
+                .clone()
+                .into_iter()
+                .find(|token| matches!(token, TokenTree::Ident(ident) if ident == "enum"))
         })
         .is_some()
 }
@@ -69,7 +56,7 @@ pub fn input_derive(input: TokenStream) -> TokenStream {
                 IdentKind::Optional(ident) => (quote! { optional }, ident),
             };
 
-            let options = get_options(&ident, &field);
+            let options = get_all_options(&field);
             let ident_str = ident.to_string();
 
             if matches!(ident_str.as_str(), numeric_types!(signed))

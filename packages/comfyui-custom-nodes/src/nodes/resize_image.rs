@@ -5,6 +5,7 @@ use rayon::prelude::*;
 use resize::Pixel::{GrayF32, RGBF32};
 use resize::{PixelFormat, Type};
 use comfyui_plugin::prelude::*;
+use inventory;
 
 #[derive(Debug, Default, Clone, Enum)]
 enum Interpolation {
@@ -70,8 +71,6 @@ impl<'a> Node<'a> for ResizeImage {
     "#;
 
     fn execute(&self, input: Self::In) -> NodeResult<'a, Self> {
-        let device = Device::Cpu;
-
         let mask = if let Some(mask) = input.mask {
             let (batch, mask_height, mask_width) = mask.dims3()?;
 
@@ -92,7 +91,7 @@ impl<'a> Node<'a> for ResizeImage {
             None
         };
 
-        let (batch, height, width, channels) = input.image.dims4()?;
+        let (batch, height, width, _) = input.image.dims4()?;
 
         let image = self.resize_parallel::<3, Tensor, _, _, _>(
             &input.image,

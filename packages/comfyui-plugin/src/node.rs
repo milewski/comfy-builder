@@ -1,3 +1,4 @@
+use crate::registry::Registerable;
 use indexmap::IndexMap;
 use pyo3::types::PyDict;
 use pyo3::{Bound, PyClass, PyResult, Python};
@@ -97,7 +98,7 @@ pub trait OutputPort<'a> {
 
 pub type NodeResult<'a, T> = Result<<T as Node<'a>>::Out, Box<dyn std::error::Error>>;
 
-pub trait Node<'a>: PyClass + Default {
+pub trait Node<'a>: PyClass + Default + Sync + Send {
     type In: InputPort<'a>;
     type Out: OutputPort<'a>;
 
@@ -114,6 +115,8 @@ pub trait Node<'a>: PyClass + Default {
 
     fn execute(&self, input: Self::In) -> NodeResult<'a, Self>;
 }
+
+impl<'a, T: Node<'a>> Registerable for T {}
 
 pub trait EnumVariants: From<String> {
     fn variants() -> Vec<&'static str>;

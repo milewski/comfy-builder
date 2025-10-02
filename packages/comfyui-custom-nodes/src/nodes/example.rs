@@ -1,4 +1,5 @@
 use comfyui_plugin::prelude::*;
+use inventory;
 
 #[derive(NodeInput)]
 pub struct Input {

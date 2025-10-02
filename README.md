@@ -1,8 +1,15 @@
-# ComfyUI Nodes Builder
+# ComfyUI Node Builder
 
-A "Framework" for building custom nodes for comfyui ui in Rust!, grants you higher speed, easier setup
+A Rust framework for building custom nodes for ComfyUI with enhanced performance and simplified development workflow.
 
-Sample:
+### Overview
+
+ComfyUI Node Builder provides a powerful, type-safe framework for creating custom nodes in ComfyUI using Rust.
+Built with performance in mind, this framework offers faster execution times and a more streamlined development experience compared to traditional Python-based node development.
+
+### Quick Start
+
+Basic Node Example
 
 ```rust
 use comfyui_plugin::prelude::*;
@@ -37,5 +44,21 @@ impl<'a> Node<'a> for Sum {
         })
     }
 }
+
+// Auto Register / Export every custom node created automatically
+comfyui_macro::register!();
 ```
 
+### Installation
+- Add the dependency to your Cargo.toml:
+
+```toml
+[dependencies]
+comfyui-plugin = "0.1"
+```
+
+### Contributing
+Contributions are welcome! Please feel free to submit issues, feature requests, or pull requests to improve this framework.
+
+### License
+This project is licensed under the MIT License - see the LICENSE file for details.

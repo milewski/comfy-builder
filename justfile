@@ -1,5 +1,5 @@
 build:
-    maturin build --release -m ./packages/comfyui-custom-nodes/Cargo.toml -i python3.14
+    maturin build --release -m ./packages/comfyui-custom-nodes/Cargo.toml -i python3.12
 
 docker:
     just build
@@ -9,7 +9,3 @@ docker:
 
 clippy:
     cargo clippy --fix --allow-dirty
-
-try:
-    just build
-    just install

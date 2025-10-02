@@ -22,3 +22,8 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
 pub fn enum_derive(input: TokenStream) -> TokenStream {
     macros::r#enum::enum_derive(input)
 }
+
+#[proc_macro]
+pub fn register(input: TokenStream) -> TokenStream {
+    macros::register::register(input)
+}

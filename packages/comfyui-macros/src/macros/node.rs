@@ -4,17 +4,21 @@ use syn::{parse_macro_input, DeriveInput};
 
 pub fn node(_: TokenStream, input: TokenStream) -> TokenStream {
     let input_struct = parse_macro_input!(input as DeriveInput);
-    let struct_name = &input_struct.ident;
+    let ident = &input_struct.ident;
 
     TokenStream::from(quote! {
         use pyo3::prelude::*;
+
+        inventory::submit! {
+            comfyui_plugin::registry::NodeRegistration::new::<#ident>()
+        }
 
         #[pyo3::pyclass]
         #[derive(std::default::Default)]
         #input_struct
 
         #[pyo3::pymethods]
-        impl #struct_name {
+        impl #ident {
             #[new]
             fn __initialize() -> Self {
                 Self::new()

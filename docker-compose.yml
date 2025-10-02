@@ -2,7 +2,7 @@ services:
   comfyui:
     image: yanwk/comfyui-boot:cu129-slim
     volumes:
-      - .:/root/ComfyUI/custom_nodes/god_nodes
+      - ./packages/comfyui-custom-nodes:/root/ComfyUI/custom_nodes/comfyui-custom-nodes
       - ./target/wheels:/wheels:ro
     ports:
       - "8188:8188"

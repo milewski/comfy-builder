@@ -2,8 +2,7 @@
 
 A Rust framework for building custom nodes for ComfyUI with enhanced performance and simplified development workflow.
 
-> Note: Work in Progress
-While the basic functionality works, there are still several features present in the Python version that have not yet been fully implemented in this Rust version. 
+> **Work in Progress**, while the basic functionality works, there are still several features present in the Python version that have not yet been fully implemented in this Rust version. 
 The framework is actively being developed and will continue to expand its feature set to match the full capabilities of the original ComfyUI node system.
 
 ## Overview
@@ -51,14 +50,6 @@ impl<'a> Node<'a> for Sum {
 
 // Auto Register / Export every custom node created automatically
 comfyui_macro::register!();
-```
-
-## Installation
-- Add the dependency to your Cargo.toml:
-
-```toml
-[dependencies]
-comfyui-plugin = "0.1"
 ```
 
 ## Join the telegram group

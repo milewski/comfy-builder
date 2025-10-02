@@ -24,6 +24,6 @@ pub fn enum_derive(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
-pub fn register(input: TokenStream) -> TokenStream {
-    macros::register::register(input)
+pub fn boostrap(input: TokenStream) -> TokenStream {
+    macros::boostrap::boostrap(input)
 }

@@ -1,0 +1,22 @@
+[package]
+name = "comfy-builder-macros"
+version.workspace = true
+edition.workspace = true
+description = "A system for building custom nodes for ComfyUI in Rust."
+readme.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+exclude.workspace = true
+rust-version.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "^1.0"
+quote = "^1.0"
+syn = { version = "^2.0", features = ["full"] }

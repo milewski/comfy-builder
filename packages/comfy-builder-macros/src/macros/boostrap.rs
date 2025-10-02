@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use quote::quote;
 
-pub fn register(_: TokenStream) -> TokenStream {
+pub fn boostrap(_: TokenStream) -> TokenStream {
     let crate_name = std::env::var("CARGO_PKG_NAME")
         .expect("Failed to determine crate name. Please ensure you're building this package with Cargo and that the CARGO_PKG_NAME environment variable is set correctly.");
 
@@ -16,7 +16,7 @@ pub fn register(_: TokenStream) -> TokenStream {
             let node_class_mappings = pyo3::types::PyDict::new(python);
             let node_display_name_mappings = pyo3::types::PyDict::new(python);
 
-            for registration in inventory::iter::<comfyui_plugin::registry::NodeRegistration>() {
+            for registration in inventory::iter::<comfy_builder_core::registry::NodeRegistration>() {
                 registration.register(
                     python,
                     module,

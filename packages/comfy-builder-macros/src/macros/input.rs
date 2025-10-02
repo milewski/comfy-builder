@@ -69,7 +69,7 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
                 attributes.push(quote! {
                     let dict = pyo3::types::PyDict::new(py);
                     #options
-                    #bucket.set_item(stringify!(#attribute), (comfyui_plugin::node::DataType::from(stringify!(#ident)).to_string(), dict))?;
+                    #bucket.set_item(stringify!(#attribute), (comfy_builder_core::node::DataType::from(stringify!(#ident)).to_string(), dict))?;
                 })
             }
 
@@ -114,14 +114,14 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
 
     TokenStream::from(quote! {
 
-        use comfyui_plugin::node::InputPort;
+        use comfy_builder_core::node::InputPort;
         use pyo3::prelude::*;
 
-        impl<'a> comfyui_plugin::node::InputPort<'a> for #name {
+        impl<'a> comfy_builder_core::node::InputPort<'a> for #name {
 
             fn get_inputs(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::types::PyDict>> {
 
-                use comfyui_plugin::node::EnumVariants;
+                use comfy_builder_core::node::EnumVariants;
 
                 let output = pyo3::types::PyDict::new(py);
                 let required = pyo3::types::PyDict::new(py);

@@ -2,7 +2,7 @@ pub mod r#enum;
 pub mod input;
 pub mod output;
 pub mod node;
-pub mod register;
+pub mod boostrap;
 
 macro_rules! numeric_types {
     (signed) => {

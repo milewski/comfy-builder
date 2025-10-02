@@ -26,7 +26,7 @@ pub fn enum_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(quote! {
         use pyo3::prelude::*;
 
-        impl comfyui_plugin::node::EnumVariants for #name {
+        impl comfy_builder_core::node::EnumVariants for #name {
             fn variants() -> Vec<&'static str> {
                 vec![#(#variant_names),*]
             }

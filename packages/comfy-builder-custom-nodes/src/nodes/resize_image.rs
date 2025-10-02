@@ -4,7 +4,7 @@ use candle_core::shape::ShapeWithOneHole;
 use rayon::prelude::*;
 use resize::Pixel::{GrayF32, RGBF32};
 use resize::{PixelFormat, Type};
-use comfyui_plugin::prelude::*;
+use comfy_builder_core::prelude::*;
 use inventory;
 
 #[derive(Debug, Default, Clone, Enum)]

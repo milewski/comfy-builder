@@ -1,3 +1,17 @@
+[workspace.package]
+version = "0.0.1"
+edition = "2024"
+description = "A system for building custom nodes for ComfyUI in Rust."
+readme = "README.md"
+repository = "https://github.com/milewski/comfy-node-builder"
+homepage = "https://github.com/your-username/comfyui-node-builder"
+license = "MIT"
+authors = ["Rafael Milewski <rafael.milewski@gmail.com>"]
+keywords = ["comfy", "comfyui", "comfy-ui"]
+categories = ["development-tools"]
+exclude = [".git", ".github"]
+rust-version = "1.90.0"
+
 [profile.release]
 opt-level = 3
 lto = true
@@ -5,20 +19,16 @@ codegen-units = 1
 panic = "abort"
 strip = true
 
-[workspace.package]
-version = "0.1.0"
-edition = "2024"
-
 [workspace]
 resolver = "3"
 members = [
-    "./packages/comfyui-macros",
-    "./packages/comfyui-plugin",
-    "./packages/comfyui-custom-nodes",
+    "packages/comfy-builder-core",
+    "packages/comfy-builder-macros",
+    "packages/comfy-builder-custom-nodes",
 ]
 
 [workspace.dependencies]
 pyo3 = { version = "0.26.0", features = ["extension-module", "abi3-py312"] }
 candle-core = "0.9.1"
-comfyui-macro = { path = "./packages/comfyui-macros" }
-comfyui-plugin = { path = "./packages/comfyui-plugin" }
+comfy-builder-macros = { path = "packages/comfy-builder-macros" }
+comfy-builder-core = { path = "packages/comfy-builder-core" }

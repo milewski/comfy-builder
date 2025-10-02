@@ -1,0 +1,31 @@
+[package]
+name = "comfy-builder-custom-nodes"
+version.workspace = true
+edition.workspace = true
+description = "A system for building custom nodes for ComfyUI in Rust."
+readme.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+exclude.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "comfy_builder_custom_nodes"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3.workspace = true
+candle-core.workspace = true
+comfy-builder-core.workspace = true
+
+rayon = "1.11.0"
+resize = "0.8.8"
+indexmap = "2.11.4"
+inventory = "0.3.21"
+
+[build-dependencies]
+toml = "0.9.7"

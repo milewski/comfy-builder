@@ -1,4 +1,4 @@
-use comfyui_plugin::prelude::*;
+use comfy_builder_core::prelude::*;
 use inventory;
 
 #[derive(NodeInput)]

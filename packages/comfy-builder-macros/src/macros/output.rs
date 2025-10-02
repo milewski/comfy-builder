@@ -24,7 +24,7 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
                     IdentKind::Optional(ident) => ident,
                 };
 
-                let token = quote! { comfyui_plugin::node::DataType::from(stringify!(#ident)) };
+                let token = quote! { comfy_builder_core::node::DataType::from(stringify!(#ident)) };
 
                 field_inserts.push(quote! {
                     map.insert(stringify!(#attribute), #token);
@@ -46,8 +46,8 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(quote! {
         use pyo3::prelude::*;
 
-        impl<'a> comfyui_plugin::node::OutputPort<'a> for #name {
-            fn get_outputs() -> indexmap::IndexMap<&'static str, comfyui_plugin::node::DataType> {
+        impl<'a> comfy_builder_core::node::OutputPort<'a> for #name {
+            fn get_outputs() -> indexmap::IndexMap<&'static str, comfy_builder_core::node::DataType> {
                 let mut map = indexmap::IndexMap::new();
                 #(#field_inserts)*
                 map

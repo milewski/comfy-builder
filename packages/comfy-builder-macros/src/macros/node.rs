@@ -10,7 +10,7 @@ pub fn node(_: TokenStream, input: TokenStream) -> TokenStream {
         use pyo3::prelude::*;
 
         inventory::submit! {
-            comfyui_plugin::registry::NodeRegistration::new::<#ident>()
+            comfy_builder_core::registry::NodeRegistration::new::<#ident>()
         }
 
         #[pyo3::pyclass]
@@ -39,19 +39,19 @@ pub fn node(_: TokenStream, input: TokenStream) -> TokenStream {
             #[classmethod]
             #[pyo3(name = "INPUT_TYPES")]
             fn __input_types<'a>(cls: &pyo3::Bound<'a, pyo3::types::PyType>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::types::PyDict>> {
-                <<Self as comfyui_plugin::node::Node>::In as comfyui_plugin::node::InputPort<'a>>::get_inputs(cls.py())
+                <<Self as comfy_builder_core::node::Node>::In as comfy_builder_core::node::InputPort<'a>>::get_inputs(cls.py())
             }
 
             #[classattr]
             #[pyo3(name = "RETURN_TYPES")]
             fn __return_types<'a>(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::PyAny>> {
-                <<Self as comfyui_plugin::node::Node>::Out as comfyui_plugin::node::OutputPort<'a>>::values().into_pyobject(py)
+                <<Self as comfy_builder_core::node::Node>::Out as comfy_builder_core::node::OutputPort<'a>>::values().into_pyobject(py)
             }
 
             #[classattr]
             #[pyo3(name = "RETURN_NAMES")]
             fn __return_names<'a>(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::PyAny>> {
-                <<Self as comfyui_plugin::node::Node>::Out as comfyui_plugin::node::OutputPort<'a>>::keys().into_pyobject(py)
+                <<Self as comfy_builder_core::node::Node>::Out as comfy_builder_core::node::OutputPort<'a>>::keys().into_pyobject(py)
             }
 
             #[classattr]

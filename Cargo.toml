@@ -1,10 +1,10 @@
 [workspace.package]
-version = "0.0.1"
+version = "0.0.2"
 edition = "2024"
 description = "A system for building custom nodes for ComfyUI in Rust."
 readme = "README.md"
 repository = "https://github.com/milewski/comfy-node-builder"
-homepage = "https://github.com/your-username/comfyui-node-builder"
+homepage = "https://github.com/milewski/comfy-node-builder"
 license = "MIT"
 authors = ["Rafael Milewski <rafael.milewski@gmail.com>"]
 keywords = ["comfy", "comfyui", "comfy-ui"]

@@ -1,17 +1,17 @@
 [package]
 name = "comfy-builder-custom-nodes"
-version.workspace = true
-edition.workspace = true
+version = "0.0.1"
+edition = "2024"
 description = "A system for building custom nodes for ComfyUI in Rust."
-readme.workspace = true
-repository.workspace = true
-homepage.workspace = true
-license.workspace = true
-authors.workspace = true
-keywords.workspace = true
-categories.workspace = true
-exclude.workspace = true
-rust-version.workspace = true
+readme = "../../README.md"
+repository = "https://github.com/milewski/comfy-node-builder"
+homepage = "https://github.com/milewski/comfy-node-builder"
+license = "MIT"
+authors = ["Rafael Milewski <rafael.milewski@gmail.com>"]
+keywords = ["comfy", "comfyui", "comfy-ui"]
+categories = ["development-tools"]
+exclude = [".git", ".github"]
+rust-version = "1.90.0"
 
 [lib]
 name = "comfy_builder_custom_nodes"
@@ -19,8 +19,8 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = { version = "0.26.0", features = ["extension-module", "abi3-py312"] }
-candle-core = { version = "0.9.1" }
-comfy-builder-core = { version = "0.0.1" }
+candle-core = "0.9.1"
+comfy-builder-core = { version = "0.0.1", path = "../comfy-builder-core" }
 
 rayon = "1.11.0"
 resize = "0.8.8"

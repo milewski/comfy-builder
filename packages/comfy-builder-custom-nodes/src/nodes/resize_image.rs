@@ -54,7 +54,7 @@ pub struct Input {
     #[attribute(min = 0, step = 1, default = 1024)]
     height: usize,
 
-    image: Tensor,
+    image: Image,
 
     mask: Option<Mask>,
 
@@ -64,7 +64,7 @@ pub struct Input {
 
 #[derive(NodeOutput)]
 pub struct Output {
-    image: Tensor,
+    image: Image,
     mask: Option<Mask>,
     width: usize,
     height: usize,
@@ -106,7 +106,7 @@ impl<'a> Node<'a> for ResizeImage {
 
         let (batch, height, width, _) = input.image.dims4()?;
 
-        let image = self.resize_parallel::<3, Tensor, _, _, _>(
+        let image = self.resize_parallel::<3, Image, _, _, _>(
             &input.image,
             batch,
             width,

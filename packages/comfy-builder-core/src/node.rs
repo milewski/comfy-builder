@@ -36,8 +36,9 @@ impl From<&str> for DataType {
             "String" => DataType::String,
 
             // Tensors
-            "Tensor" => DataType::Image,
+            "Image" => DataType::Image,
             "Mask" => DataType::Mask,
+            "Latent" => DataType::Latent,
 
             // Hidden Inputs
             "UniqueId" => DataType::String,

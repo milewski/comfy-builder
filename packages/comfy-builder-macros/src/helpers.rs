@@ -60,7 +60,7 @@ impl<'a> FieldExtractor<'a> {
     pub fn is_tensor_type(&self) -> bool {
         let kind_str = self.value_ident().to_string();
 
-        matches!(kind_str.as_str(), numeric_types!() | "Tensor" | "Mask")
+        matches!(kind_str.as_str(), numeric_types!() | "Tensor" | "Mask" | "Latent")
     }
 
     pub fn is_primitive(&self) -> bool {

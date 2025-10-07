@@ -3,13 +3,12 @@ use inventory;
 
 #[derive(NodeInput)]
 pub struct Input {
-    left: usize,
-    right: usize,
+    latent: Latent,
 }
 
 #[derive(NodeOutput)]
 pub struct Output {
-    sum: usize,
+    latent: Latent,
 }
 
 #[node]
@@ -26,8 +25,11 @@ impl<'a> Node<'a> for Sum {
     "#;
 
     fn execute(&self, input: Self::In) -> NodeResult<'a, Self> {
+
+        println!("{:#?}", input.latent);
+
         Ok(Output {
-            sum: input.left + input.right,
+            latent: input.latent,
         })
     }
 }

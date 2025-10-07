@@ -27,7 +27,7 @@ impl<'py, T: Element + WithDType> IntoPyObject<'py> for Mask<T> {
     }
 }
 
-impl<T: Element + WithDType, S: ShapeWithOneHole> TryFrom<(Vec<T>, S, &Device)> for Mask {
+impl<T: Element + WithDType, S: ShapeWithOneHole> TryFrom<(Vec<T>, S, &Device)> for Mask<T> {
     type Error = candle_core::Error;
 
     fn try_from(value: (Vec<T>, S, &Device)) -> Result<Self, Self::Error> {
@@ -37,9 +37,7 @@ impl<T: Element + WithDType, S: ShapeWithOneHole> TryFrom<(Vec<T>, S, &Device)> 
 
 impl<'py, T: Element + WithDType> FromPyObject<'py> for Mask<T> {
     fn extract_bound(object: &Bound<'py, PyAny>) -> PyResult<Self> {
-        object
-            .extract::<Bound<'py, PyAny>>()
-            .map(|value| Image::new(&value, &Device::Cpu).into())
+        Ok(Image::new(object.extract::<Bound<'py, PyAny>>()?, &Device::Cpu)?.into())
     }
 }
 

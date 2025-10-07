@@ -14,29 +14,28 @@ pub struct Image<T: Element + WithDType = f32> {
 }
 
 impl<T: Element + WithDType> Image<T> {
-    pub fn new<'py>(py_any: &Bound<'py, PyAny>, device: &Device) -> Self {
-        let tensor = Self::torch_to_candle(py_any, device);
-
-        Self {
-            tensor,
+    pub fn new(any: Bound<PyAny>, device: &Device) -> PyResult<Self> {
+        Ok(Self {
+            tensor: Self::torch_to_candle(any, device)?,
             marker: PhantomData,
-        }
+        })
     }
 
-    fn torch_to_candle<'py>(torch_tensor: &Bound<'py, PyAny>, device: &Device) -> CandleTensor {
-        let mut np = torch_tensor.call_method0("numpy").unwrap();
+    fn torch_to_candle(torch_tensor: Bound<PyAny>, device: &Device) -> PyResult<CandleTensor> {
+        let mut numpy = torch_tensor.call_method0("numpy")?;
 
-        let mut arr = np.downcast::<PyArrayDyn<T>>().unwrap();
+        let mut array = numpy.downcast::<PyArrayDyn<T>>()?;
 
-        if !arr.is_contiguous() {
-            np = np.call_method0("copy").unwrap();
-            arr = np.downcast::<PyArrayDyn<T>>().unwrap();
+        if !array.is_contiguous() {
+            numpy = numpy.call_method0("copy")?;
+            array = numpy.downcast::<PyArrayDyn<T>>()?;
         }
 
-        let shape = arr.shape().to_vec();
-        let data = arr.to_vec().unwrap();
+        let shape = array.shape().to_vec();
+        let data = array.to_vec()?;
 
-        CandleTensor::from_vec(data, shape, device).unwrap()
+        CandleTensor::from_vec(data, shape, device)
+            .map_err(|error| PyRuntimeError::new_err(format!("Execution failed: {}", error)))
     }
 
     /// The dimension size for this tensor on each axis.
@@ -91,14 +90,14 @@ impl<T: Element + WithDType> Image<T> {
         data: Vec<T>,
         shape: U,
         device: &Device,
-    ) -> candle_core::Result<Image> {
+    ) -> candle_core::Result<Image<T>> {
         Ok(Image::from_tensor(CandleTensor::from_vec(
             data, shape, device,
         )?))
     }
 }
 
-impl<T: Element + WithDType, S: ShapeWithOneHole> TryFrom<(Vec<T>, S, &Device)> for Image {
+impl<T: Element + WithDType, S: ShapeWithOneHole> TryFrom<(Vec<T>, S, &Device)> for Image<T> {
     type Error = candle_core::Error;
 
     fn try_from(value: (Vec<T>, S, &Device)) -> Result<Self, Self::Error> {
@@ -116,8 +115,6 @@ impl<T: Element + WithDType> Deref for Image<T> {
 
 impl<'py, T: Element + WithDType> FromPyObject<'py> for Image<T> {
     fn extract_bound(object: &Bound<'py, PyAny>) -> PyResult<Self> {
-        object
-            .extract::<Bound<'py, PyAny>>()
-            .map(|value| Image::new(&value, &Device::Cpu))
+        Image::new(object.extract::<Bound<'py, PyAny>>()?, &Device::Cpu)
     }
 }

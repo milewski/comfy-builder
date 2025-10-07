@@ -2,6 +2,7 @@ use proc_macro::TokenStream;
 
 mod macros;
 mod options;
+mod helpers;
 
 #[proc_macro_attribute]
 pub fn node(arguments: TokenStream, input: TokenStream) -> TokenStream {
@@ -18,7 +19,7 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
     macros::input::node_input_derive(input)
 }
 
-#[proc_macro_derive(Enum)]
+#[proc_macro_derive(Enum, attributes(label))]
 pub fn enum_derive(input: TokenStream) -> TokenStream {
     macros::r#enum::enum_derive(input)
 }

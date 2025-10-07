@@ -10,12 +10,25 @@ use inventory;
 #[derive(Debug, Default, Clone, Enum)]
 enum Interpolation {
     #[default]
+    #[label = "lanczos3"]
     Lanczos3,
+
+    #[label = "point"]
     Point,
+
+    #[label = "triangle"]
     Triangle,
+
+    #[label = "catrom"]
     Catrom,
+
+    #[label = "mitchell"]
     Mitchell,
+
+    #[label = "bspline"]
     BSpline,
+
+    #[label = "gaussian"]
     Gaussian,
 }
 
@@ -115,6 +128,7 @@ impl<'a> Node<'a> for ResizeImage {
 }
 
 impl ResizeImage {
+    #[allow(clippy::too_many_arguments)]
     fn resize_parallel<'a, const CHANNELS: usize, Output, Input, Format, Shape>(
         &self,
         image: &Input,
@@ -166,6 +180,7 @@ impl ResizeImage {
         ))
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn resize<const CHANNELS: usize, Format: PixelFormat>(
         &self,
         input: &[f32],

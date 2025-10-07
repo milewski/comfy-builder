@@ -1,6 +1,21 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DataEnum, DeriveInput};
+use syn::{Data, DataEnum, DeriveInput, Expr, ExprLit, Lit, Variant, parse_macro_input};
+
+fn fetch_label(variant: &Variant) -> Option<String> {
+    variant
+        .attrs
+        .iter()
+        .find(|attribute| attribute.path().is_ident("label"))
+        .and_then(|attribute| attribute.meta.require_name_value().ok())
+        .and_then(|meta| match &meta.value {
+            Expr::Lit(ExprLit {
+                lit: Lit::Str(content),
+                ..
+            }) => Some(content.value()),
+            _ => None,
+        })
+}
 
 pub fn enum_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -13,8 +28,15 @@ pub fn enum_derive(input: TokenStream) -> TokenStream {
 
     let variant_names: Vec<_> = variants
         .iter()
-        .map(|variant| &variant.ident)
-        .map(|ident| quote! { stringify!(#ident) })
+        .map(|variant| {
+            let ident = &variant.ident;
+
+            if let Some(label) = fetch_label(variant) {
+                quote! { #label }
+            } else {
+                quote! { stringify!(#ident) }
+            }
+        })
         .collect();
 
     let variant_matches: Vec<_> = variants
@@ -24,6 +46,7 @@ pub fn enum_derive(input: TokenStream) -> TokenStream {
         .collect();
 
     TokenStream::from(quote! {
+
         use pyo3::prelude::*;
 
         impl comfy_builder_core::node::EnumVariants for #name {

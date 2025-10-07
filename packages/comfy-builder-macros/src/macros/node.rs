@@ -68,7 +68,7 @@ pub fn node(_: TokenStream, input: TokenStream) -> TokenStream {
                     pyo3::exceptions::PyRuntimeError::new_err(format!("Execution failed: {}", error))
                 })?;
 
-                Ok(output.into_pyobject(py.py())?)
+                output.into_pyobject(py.py())
             }
         }
     })

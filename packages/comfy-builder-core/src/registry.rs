@@ -6,6 +6,7 @@ pub trait Registerable: PyClass {}
 
 #[derive(Debug)]
 pub struct NodeRegistration {
+    #[allow(clippy::type_complexity)]
     inner: fn(
         python: Python,
         module: &Bound<PyModule>,

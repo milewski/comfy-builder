@@ -1,119 +1,87 @@
-use crate::macros::{IdentKind, extract_field_info, numeric_types};
-use crate::options::{AnyOption, Options};
 use proc_macro::TokenStream;
-use proc_macro2::{TokenTree};
 use quote::quote;
-use syn::{Data, DeriveInput, Field, Fields, parse_macro_input};
-
-fn get_all_options(field: &Field) -> proc_macro2::TokenStream {
-    field
-        .attrs
-        .iter()
-        .find(|attribute| attribute.path().is_ident("attribute"))
-        .map(|attribute| attribute.meta.require_list().ok())
-        .flatten()
-        .and_then(|meta| meta.parse_args::<AnyOption>().ok())
-        .map(|option| option.generate_token_stream())
-        .unwrap_or_default()
-        .into()
-}
-
-fn is_enum(field: &Field) -> bool {
-    field
-        .attrs
-        .iter()
-        .find(|attribute| attribute.meta.path().is_ident("attribute"))
-        .map(|attribute| attribute.meta.require_list().ok())
-        .flatten()
-        .and_then(|meta| {
-            meta.tokens
-                .clone()
-                .into_iter()
-                .find(|token| matches!(token, TokenTree::Ident(ident) if ident == "enum"))
-        })
-        .is_some()
-}
+use syn::{
+    parse_macro_input, Data, DeriveInput, Fields
+    ,
+};
+use crate::helpers::FieldExtractor;
 
 pub fn node_input_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
 
-    let fields = match &input.data {
-        Data::Struct(data_struct) => match &data_struct.fields {
-            Fields::Named(fields_named) => &fields_named.named,
-            _ => panic!("InputDerive only works on structs with named fields"),
+    let fields = match input.data {
+        Data::Struct(data_struct) => match data_struct.fields {
+            Fields::Named(fields_named) => fields_named.named,
+            _ => panic!("NodeInput only works on structs with named fields"),
         },
-        _ => panic!("InputDerive only works on structs"),
+        _ => panic!("NodeInput only works on structs"),
     };
 
     let mut decoders: Vec<proc_macro2::TokenStream> = vec![];
-    let mut attributes: Vec<proc_macro2::TokenStream> = vec![];
+    let mut elements: Vec<proc_macro2::TokenStream> = vec![];
 
-    for field in fields {
-        if let (Some(kind), Some(attribute)) = (extract_field_info(&field.ty), &field.ident) {
-            let (bucket, ident) = match kind {
-                IdentKind::Required(ident) => (quote! { required }, ident),
-                IdentKind::Optional(ident) => (quote! { optional }, ident),
-            };
+    for field in fields.iter().map(FieldExtractor::from) {
+        let property_ident = field.property_ident();
+        let value_ident = field.value_ident();
+        let options_default = field.options_default();
+        let options = field.options();
+        let bucket = if field.is_required() {
+            quote! { required }
+        } else {
+            quote! { optional }
+        };
 
-            let options = get_all_options(&field);
-            let ident_str = ident.to_string();
+        if field.is_primitive() || field.is_tensor_type() {
+            elements.push(quote! {
+                let dict = pyo3::types::PyDict::new(py);
+                let data_type = comfy_builder_core::node::DataType::from(stringify!(#value_ident)).to_string();
 
-            if matches!(ident_str.as_str(), numeric_types!(signed))
-                || matches!(ident_str.as_str(), numeric_types!(unsigned))
-                || matches!(ident_str.as_str(), "bool")
-                || matches!(ident_str.as_str(), "String")
-                || matches!(ident_str.as_str(), "Tensor")
-                || matches!(ident_str.as_str(), "Mask")
-            {
-                attributes.push(quote! {
-                    let dict = pyo3::types::PyDict::new(py);
-                    #options
-                    #bucket.set_item(stringify!(#attribute), (comfy_builder_core::node::DataType::from(stringify!(#ident)).to_string(), dict))?;
-                })
-            }
+                #options_default
+                #options
 
-            if matches!(
-                ident_str.as_str(),
-                "UniqueId" | "Prompt" | "ExtraPngInfo" | "DynPrompt"
-            ) {
-                let token = match ident_str.as_str() {
-                    "UniqueId" => "UNIQUE_ID",
-                    "Prompt" => "PROMPT",
-                    "ExtraPngInfo" => "EXTRA_PNGINFO",
-                    "DynPrompt" => "DYNPROMPT",
-                    _ => unreachable!(),
-                };
-
-                attributes.push(quote! {
-                    hidden.set_item(stringify!(#attribute), #token)?;
-                })
-            }
-
-            if is_enum(&field) {
-                attributes.push(quote! {
-                    #bucket.set_item(stringify!(#attribute), (#ident::variants(),))?;
-                })
-            }
-
-            let extract_logic = quote! {
-                kwargs
-                    .and_then(|kwargs| kwargs.get_item(stringify!(#attribute)).ok())
-                    .flatten()
-                    .and_then(|value| value.extract::<#ident>().ok())
-            };
-
-            decoders.push(match kind {
-                IdentKind::Required(_) => {
-                    quote! { #attribute: #extract_logic.expect("Unable to retrieve attribute."), }
-                }
-                IdentKind::Optional(_) => quote! { #attribute: #extract_logic, },
+                #bucket.set_item(stringify!(#property_ident), (data_type, dict))?;
             });
         }
+
+        if field.is_enum() {
+            elements.push(quote! {
+                #bucket.set_item(stringify!(#property_ident), (#value_ident::variants(),))?;
+            });
+        }
+
+        if let Some(token) = field.get_hidden_tokens() {
+            elements.push(quote! {
+                hidden.set_item(stringify!(#property_ident), #token)?;
+            })
+        }
+
+        let extract_logic = quote! {
+            kwargs
+                .and_then(|kwargs| kwargs.get_item(stringify!(#property_ident)).ok())
+                .flatten()
+                .and_then(|value| value.extract::<#value_ident>().ok())
+        };
+
+        // If the field is a `String`, strip out empty values so that the
+        // field’s default is used instead of an empty string.
+        // Returning `None` tells the deserializer to fall back to the default.
+        let extract_logic = if field.is_string() {
+            quote! { #extract_logic.and_then(|string| if string.is_empty() { None } else { Some(string) }) }
+        } else {
+            quote! { #extract_logic }
+        };
+
+        decoders.push(if field.is_required() {
+            quote! { #property_ident: #extract_logic.expect("unable to retrieve attribute."), }
+        } else {
+            quote! { #property_ident: #extract_logic, }
+        });
     }
 
     TokenStream::from(quote! {
 
+        use comfy_builder_core::node::EnumVariants;
         use comfy_builder_core::node::InputPort;
         use pyo3::prelude::*;
 
@@ -121,14 +89,12 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
 
             fn get_inputs(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::types::PyDict>> {
 
-                use comfy_builder_core::node::EnumVariants;
-
                 let output = pyo3::types::PyDict::new(py);
                 let required = pyo3::types::PyDict::new(py);
                 let optional = pyo3::types::PyDict::new(py);
                 let hidden = pyo3::types::PyDict::new(py);
 
-                #(#attributes)*
+                #(#elements)*
 
                 output.set_item("required", required)?;
                 output.set_item("optional", optional)?;

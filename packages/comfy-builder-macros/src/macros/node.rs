@@ -51,7 +51,7 @@ pub fn node(_: TokenStream, input: TokenStream) -> TokenStream {
             #[classattr]
             #[pyo3(name = "RETURN_NAMES")]
             fn __return_names<'a>(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::PyAny>> {
-                <<Self as comfy_builder_core::node::Node>::Out as comfy_builder_core::node::OutputPort<'a>>::keys().into_pyobject(py)
+                <<Self as comfy_builder_core::node::Node>::Out as comfy_builder_core::node::OutputPort<'a>>::labels().into_pyobject(py)
             }
 
             #[classattr]
@@ -65,7 +65,7 @@ pub fn node(_: TokenStream, input: TokenStream) -> TokenStream {
             pub fn __run<'a>(py: &'a pyo3::Bound<pyo3::types::PyType>, kwargs: std::option::Option<&pyo3::Bound<pyo3::types::PyDict>>) -> pyo3::PyResult<impl pyo3::IntoPyObject<'a>> {
                 let instance = Self::new();
                 let output = instance.execute(instance.initialize_input(kwargs)).map_err(|error| {
-                    pyo3::exceptions::PyRuntimeError::new_err(format!("Execution failed: {}", error))
+                    pyo3::exceptions::PyRuntimeError::new_err(format!("execution failed: {}", error))
                 })?;
 
                 output.into_pyobject(py.py())

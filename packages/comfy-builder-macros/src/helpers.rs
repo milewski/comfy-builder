@@ -1,7 +1,8 @@
 use crate::options::{AnyOption, Options};
 use proc_macro2::{Ident, TokenTree};
 use quote::quote;
-use syn::{Field, GenericArgument, PathArguments, Type, TypePath};
+use std::collections::HashMap;
+use syn::{Expr, ExprLit, Field, GenericArgument, Lit, PathArguments, Type, TypePath};
 
 macro_rules! numeric_types {
     (signed) => {
@@ -40,6 +41,25 @@ impl<'a> FieldExtractor<'a> {
             .find_map(|meta| meta.parse_args::<AnyOption>().ok())
     }
 
+    pub fn named_attributes(&self) -> HashMap<String, &Lit> {
+        self.field
+            .attrs
+            .iter()
+            .filter_map(|attr| attr.meta.require_name_value().ok())
+            .flat_map(|meta| {
+                meta.path.require_ident().map(|ident| {
+                    (
+                        ident.to_string(),
+                        match &meta.value {
+                            Expr::Lit(ExprLit { lit, .. }) => lit,
+                            _ => unreachable!(),
+                        },
+                    )
+                })
+            })
+            .collect()
+    }
+
     pub fn options(&self) -> proc_macro2::TokenStream {
         self.attributes()
             .map(|option| option.generate_token_stream())
@@ -60,7 +80,10 @@ impl<'a> FieldExtractor<'a> {
     pub fn is_tensor_type(&self) -> bool {
         let kind_str = self.value_ident().to_string();
 
-        matches!(kind_str.as_str(), numeric_types!() | "Tensor" | "Mask" | "Latent")
+        matches!(
+            kind_str.as_str(),
+            numeric_types!() | "Tensor" | "Mask" | "Latent"
+        )
     }
 
     pub fn is_primitive(&self) -> bool {

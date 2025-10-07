@@ -26,6 +26,13 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
         let value_ident = field.value_ident();
         let options_default = field.options_default();
         let options = field.options();
+
+        let named_attributes = field.named_attributes();
+        let label = named_attributes
+            .get("label")
+            .map(|label| quote! { #label })
+            .unwrap_or_else(|| quote! { stringify!(#property_ident) });
+
         let bucket = if field.is_required() {
             quote! { required }
         } else {
@@ -40,25 +47,25 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
                 #options_default
                 #options
 
-                #bucket.set_item(stringify!(#property_ident), (data_type, dict))?;
+                #bucket.set_item(#label, (data_type, dict))?;
             });
         }
 
         if field.is_enum() {
             elements.push(quote! {
-                #bucket.set_item(stringify!(#property_ident), (#value_ident::variants(),))?;
+                #bucket.set_item(#label, (#value_ident::variants(),))?;
             });
         }
 
         if let Some(token) = field.get_hidden_tokens() {
             elements.push(quote! {
-                hidden.set_item(stringify!(#property_ident), #token)?;
+                hidden.set_item(#label, #token)?;
             })
         }
 
         let extract_logic = quote! {
             kwargs
-                .and_then(|kwargs| kwargs.get_item(stringify!(#property_ident)).ok())
+                .and_then(|kwargs| kwargs.get_item(#label).ok())
                 .flatten()
                 .and_then(|value| value.extract::<#value_ident>().ok())
         };

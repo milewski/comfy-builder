@@ -83,17 +83,20 @@ pub trait InputPort<'a>: From<Option<&'a Bound<'a, PyDict>>> {
 }
 
 pub trait OutputPort<'a> {
-    fn get_outputs() -> IndexMap<&'static str, DataType>;
+    fn get_outputs() -> IndexMap<&'static str, (&'static str, DataType)>;
 
     fn values() -> Vec<String> {
         Self::get_outputs()
             .into_values()
-            .map(|value| value.to_string())
+            .map(|(_, data_type)| data_type.to_string())
             .collect()
     }
 
-    fn keys() -> Vec<&'static str> {
-        Self::get_outputs().into_keys().collect()
+    fn labels() -> Vec<&'static str> {
+        Self::get_outputs()
+            .into_values()
+            .map(|(label, _)| label)
+            .collect()
     }
 }
 

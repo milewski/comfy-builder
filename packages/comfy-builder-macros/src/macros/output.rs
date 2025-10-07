@@ -12,7 +12,7 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
         _ => panic!("NodeOutput can only be derived for structs"),
     };
 
-    let mut field_inserts = Vec::new();
+    let mut field_inserts: Vec<proc_macro2::TokenStream> = Vec::new();
     let mut into_pyobject_fields = Vec::new();
 
     if let Fields::Named(fields_named) = fields {
@@ -20,13 +20,18 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
             let field = FieldExtractor::from(&field);
             let ident = field.value_ident();
             let property_ident = field.property_ident();
+            let named_attributes = field.named_attributes();
+            let label = named_attributes
+                .get("label")
+                .map(|label| quote! { #label })
+                .unwrap_or_else(|| quote! { stringify!(#property_ident) });
 
             let token = quote! {
                 comfy_builder_core::node::DataType::from(stringify!(#ident))
             };
 
             field_inserts.push(quote! {
-                map.insert(stringify!(#property_ident), #token);
+                map.insert(stringify!(#property_ident), (#label, #token));
             });
 
             into_pyobject_fields.push(quote! {
@@ -45,7 +50,7 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
         use pyo3::prelude::*;
 
         impl<'a> comfy_builder_core::node::OutputPort<'a> for #name {
-            fn get_outputs() -> indexmap::IndexMap<&'static str, comfy_builder_core::node::DataType> {
+            fn get_outputs() -> indexmap::IndexMap<&'static str, (&'static str, comfy_builder_core::node::DataType)> {
                 let mut map = indexmap::IndexMap::new();
                 #(#field_inserts)*
                 map

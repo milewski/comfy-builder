@@ -85,6 +85,8 @@ pub trait InputPort<'a>: From<Option<&'a Bound<'a, PyDict>>> {
 pub trait OutputPort<'a> {
     fn get_outputs() -> IndexMap<&'static str, (&'static str, DataType)>;
 
+    fn get_tooltips() -> Vec<&'static str>;
+
     fn values() -> Vec<String> {
         Self::get_outputs()
             .into_values()
@@ -98,6 +100,12 @@ pub trait OutputPort<'a> {
             .map(|(label, _)| label)
             .collect()
     }
+
+    fn tooltips() -> Vec<&'static str> {
+        Self::get_tooltips()
+            .into_iter()
+            .collect()
+    }
 }
 
 pub type NodeResult<'a, T> = Result<<T as Node<'a>>::Out, Box<dyn std::error::Error>>;
@@ -106,6 +114,7 @@ pub trait Node<'a>: PyClass + Default + Sync + Send {
     type In: InputPort<'a>;
     type Out: OutputPort<'a>;
 
+    const DEPRECATED: bool = false;
     const CATEGORY: &'static str;
     const DESCRIPTION: &'static str;
 

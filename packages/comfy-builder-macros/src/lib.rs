@@ -9,7 +9,7 @@ pub fn node(arguments: TokenStream, input: TokenStream) -> TokenStream {
     macros::node::node(arguments, input)
 }
 
-#[proc_macro_derive(NodeOutput, attributes(label))]
+#[proc_macro_derive(NodeOutput, attributes(label, tooltip))]
 pub fn node_output_derive(input: TokenStream) -> TokenStream {
     macros::output::node_output_derive(input)
 }

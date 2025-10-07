@@ -13,6 +13,7 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
     };
 
     let mut field_inserts: Vec<proc_macro2::TokenStream> = Vec::new();
+    let mut tooltips_inserts: Vec<proc_macro2::TokenStream> = Vec::new();
     let mut into_pyobject_fields = Vec::new();
 
     if let Fields::Named(fields_named) = fields {
@@ -21,14 +22,25 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
             let ident = field.value_ident();
             let property_ident = field.property_ident();
             let named_attributes = field.named_attributes();
+
             let label = named_attributes
                 .get("label")
                 .map(|label| quote! { #label })
                 .unwrap_or_else(|| quote! { stringify!(#property_ident) });
 
+            let tooltip = named_attributes
+                .get("tooltip")
+                .or_else(|| named_attributes.get("doc"))
+                .map(|tooltip| quote! { #tooltip })
+                .unwrap_or_else(|| quote! { "" });
+
             let token = quote! {
                 comfy_builder_core::node::DataType::from(stringify!(#ident))
             };
+
+            tooltips_inserts.push(quote! {
+                map.push(#tooltip);
+            });
 
             field_inserts.push(quote! {
                 map.insert(stringify!(#property_ident), (#label, #token));
@@ -53,6 +65,12 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
             fn get_outputs() -> indexmap::IndexMap<&'static str, (&'static str, comfy_builder_core::node::DataType)> {
                 let mut map = indexmap::IndexMap::new();
                 #(#field_inserts)*
+                map
+            }
+
+            fn get_tooltips() -> Vec<&'static str> {
+                let mut map = Vec::new();
+                #(#tooltips_inserts)*
                 map
             }
         }

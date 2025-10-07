@@ -31,6 +31,18 @@ pub fn node(_: TokenStream, input: TokenStream) -> TokenStream {
             }
 
             #[classattr]
+            #[pyo3(name = "DEPRECATED")]
+            fn __deprecated() -> bool {
+                Self::DEPRECATED
+            }
+
+            #[classattr]
+            #[pyo3(name = "OUTPUT_TOOLTIPS")]
+            fn __output_tooltips<'a>(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::types::PyAny>> {
+                <<Self as comfy_builder_core::node::Node>::Out as comfy_builder_core::node::OutputPort<'a>>::tooltips().into_pyobject(py)
+            }
+
+            #[classattr]
             #[pyo3(name = "FUNCTION")]
             fn __function() -> &'static str {
                 "__run"

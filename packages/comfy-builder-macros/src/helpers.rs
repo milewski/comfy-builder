@@ -82,7 +82,7 @@ impl<'a> FieldExtractor<'a> {
 
         matches!(
             kind_str.as_str(),
-            numeric_types!() | "Tensor" | "Mask" | "Latent"
+            numeric_types!() | "Image" | "Mask" | "Latent"
         )
     }
 
@@ -143,8 +143,21 @@ impl<'a> FieldExtractor<'a> {
         match &self.field.ty {
             Type::Path(type_path) => match type_path.path.get_ident() {
                 Some(ident) => ident,
-                None => match extract_ident_from_option(type_path) {
-                    Some(ident) => ident,
+                None => match split_inner_ident(type_path) {
+                    Some((_, right)) => right,
+                    None => unreachable!(),
+                },
+            },
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn value_ident_wrapper(&self) -> Option<&Ident> {
+        match &self.field.ty {
+            Type::Path(type_path) => match type_path.path.get_ident() {
+                Some(_) => None,
+                None => match split_inner_ident(type_path) {
+                    Some((left, _)) => Some(left),
                     None => unreachable!(),
                 },
             },
@@ -160,15 +173,14 @@ impl<'a> FieldExtractor<'a> {
     }
 }
 
-pub fn extract_ident_from_option(path: &TypePath) -> Option<&Ident> {
+fn split_inner_ident(path: &TypePath) -> Option<(&Ident, &Ident)> {
     if path.path.segments.len() == 1
-        && path.path.segments[0].ident == "Option"
         && let PathArguments::AngleBracketed(angle) = &path.path.segments[0].arguments
         && let Some(GenericArgument::Type(inner_ty)) = angle.args.first()
         && let Type::Path(inner_path) = inner_ty
         && let Some(ident) = inner_path.path.get_ident()
     {
-        return Some(ident);
+        return Some((&path.path.segments[0].ident, ident));
     }
 
     None

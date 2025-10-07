@@ -8,6 +8,7 @@ pub fn node(_: TokenStream, input: TokenStream) -> TokenStream {
 
     TokenStream::from(quote! {
         use pyo3::prelude::*;
+        use comfy_builder_core::node::OutputPort;
 
         inventory::submit! {
             comfy_builder_core::registry::NodeRegistration::new::<#ident>()
@@ -37,39 +38,45 @@ pub fn node(_: TokenStream, input: TokenStream) -> TokenStream {
             }
 
             #[classattr]
-            #[pyo3(name = "OUTPUT_TOOLTIPS")]
-            fn __output_tooltips<'a>(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::types::PyAny>> {
-                <<Self as comfy_builder_core::node::Node>::Out as comfy_builder_core::node::OutputPort<'a>>::tooltips().into_pyobject(py)
+            #[pyo3(name = "OUTPUT_IS_LIST")]
+            fn __output_is_list<'a>(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::types::PyAny>> {
+                <Self as comfy_builder_core::node::Node>::Out::get_output_list().into_pyobject(py)
             }
 
             #[classattr]
-            #[pyo3(name = "FUNCTION")]
-            fn __function() -> &'static str {
-                "__run"
+            #[pyo3(name = "OUTPUT_TOOLTIPS")]
+            fn __output_tooltips<'a>(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::types::PyAny>> {
+                <Self as comfy_builder_core::node::Node>::Out::tooltips().into_pyobject(py)
             }
 
             #[classmethod]
             #[pyo3(name = "INPUT_TYPES")]
             fn __input_types<'a>(cls: &pyo3::Bound<'a, pyo3::types::PyType>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::types::PyDict>> {
-                <<Self as comfy_builder_core::node::Node>::In as comfy_builder_core::node::InputPort<'a>>::get_inputs(cls.py())
+                <Self as comfy_builder_core::node::Node>::In::get_inputs(cls.py())
             }
 
             #[classattr]
             #[pyo3(name = "RETURN_TYPES")]
             fn __return_types<'a>(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::PyAny>> {
-                <<Self as comfy_builder_core::node::Node>::Out as comfy_builder_core::node::OutputPort<'a>>::values().into_pyobject(py)
+                <Self as comfy_builder_core::node::Node>::Out::values().into_pyobject(py)
             }
 
             #[classattr]
             #[pyo3(name = "RETURN_NAMES")]
             fn __return_names<'a>(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::PyAny>> {
-                <<Self as comfy_builder_core::node::Node>::Out as comfy_builder_core::node::OutputPort<'a>>::labels().into_pyobject(py)
+                <Self as comfy_builder_core::node::Node>::Out::labels().into_pyobject(py)
             }
 
             #[classattr]
             #[pyo3(name = "CATEGORY")]
             fn __category() -> &'static str {
                 Self::CATEGORY
+            }
+
+            #[classattr]
+            #[pyo3(name = "FUNCTION")]
+            fn __function() -> &'static str {
+                "__run"
             }
 
             #[classmethod]

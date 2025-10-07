@@ -14,12 +14,14 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
 
     let mut field_inserts: Vec<proc_macro2::TokenStream> = Vec::new();
     let mut tooltips_inserts: Vec<proc_macro2::TokenStream> = Vec::new();
+    let mut output_list_inserts: Vec<proc_macro2::TokenStream> = Vec::new();
     let mut into_pyobject_fields = Vec::new();
 
     if let Fields::Named(fields_named) = fields {
         for field in fields_named.named {
             let field = FieldExtractor::from(&field);
             let ident = field.value_ident();
+            let ident_wrapper = field.value_ident_wrapper();
             let property_ident = field.property_ident();
             let named_attributes = field.named_attributes();
 
@@ -34,12 +36,20 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
                 .map(|tooltip| quote! { #tooltip })
                 .unwrap_or_else(|| quote! { "" });
 
+            let is_wrapped_by_vector = ident_wrapper
+                .map(|ident| ident.to_string().as_str() == "Vec")
+                .unwrap_or_default();
+
             let token = quote! {
                 comfy_builder_core::node::DataType::from(stringify!(#ident))
             };
 
             tooltips_inserts.push(quote! {
                 map.push(#tooltip);
+            });
+
+            output_list_inserts.push(quote! {
+                map.push(#is_wrapped_by_vector);
             });
 
             field_inserts.push(quote! {
@@ -71,6 +81,12 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
             fn get_tooltips() -> Vec<&'static str> {
                 let mut map = Vec::new();
                 #(#tooltips_inserts)*
+                map
+            }
+
+            fn get_output_list() -> Vec<bool> {
+                let mut map = Vec::new();
+                #(#output_list_inserts)*
                 map
             }
         }

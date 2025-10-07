@@ -106,6 +106,10 @@ pub trait OutputPort<'a> {
             .into_iter()
             .collect()
     }
+
+    fn get_output_list() -> Vec<bool> {
+        Self::get_output_list().into_iter().collect()
+    }
 }
 
 pub type NodeResult<'a, T> = Result<<T as Node<'a>>::Out, Box<dyn std::error::Error>>;

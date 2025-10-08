@@ -114,6 +114,27 @@ impl<'a> FieldExtractor<'a> {
         )
     }
 
+    /// Return the complete ident as defined on the struct side
+    pub fn output_ident(&self, force_vector: bool) -> proc_macro2::TokenStream {
+        let ident = self.value_ident();
+        let ident = match self.is_wrapped_by_vector() || force_vector {
+            true => quote! { Vec<#ident> },
+            false => quote! { #ident },
+        };
+
+        if self.is_optional() {
+            return quote! { Option<#ident> };
+        }
+
+        ident
+    }
+
+    pub fn is_wrapped_by_vector(&self) -> bool {
+        self.value_ident_wrapper()
+            .map(|ident| ident.to_string().as_str() == "Vec")
+            .unwrap_or_default()
+    }
+
     pub fn get_hidden_tokens(&self) -> Option<&'static str> {
         self.is_hidden()
             .then(|| match self.value_ident().to_string().as_str() {
@@ -166,10 +187,13 @@ impl<'a> FieldExtractor<'a> {
     }
 
     pub fn is_required(&self) -> bool {
-        match &self.field.ty {
-            Type::Path(type_path) => type_path.path.get_ident().is_some(),
-            _ => false,
-        }
+        !self.is_optional()
+    }
+
+    pub fn is_optional(&self) -> bool {
+        self.value_ident_wrapper()
+            .map(|ident| ident.to_string().as_str() == "Option")
+            .unwrap_or_default()
     }
 }
 

@@ -80,12 +80,16 @@ impl Display for DataType {
 
 pub trait InputPort<'a>: From<Option<&'a Bound<'a, PyDict>>> {
     fn get_inputs(py: Python<'a>) -> PyResult<Bound<'a, PyDict>>;
+
+    fn is_input_list() -> bool;
 }
 
 pub trait OutputPort<'a> {
     fn get_outputs() -> IndexMap<&'static str, (&'static str, DataType)>;
 
     fn get_tooltips() -> Vec<&'static str>;
+
+    fn get_output_list() -> Vec<bool>;
 
     fn values() -> Vec<String> {
         Self::get_outputs()
@@ -102,13 +106,7 @@ pub trait OutputPort<'a> {
     }
 
     fn tooltips() -> Vec<&'static str> {
-        Self::get_tooltips()
-            .into_iter()
-            .collect()
-    }
-
-    fn get_output_list() -> Vec<bool> {
-        Self::get_output_list().into_iter().collect()
+        Self::get_tooltips().into_iter().collect()
     }
 }
 

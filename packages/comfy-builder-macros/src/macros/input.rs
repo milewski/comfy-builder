@@ -1,10 +1,7 @@
+use crate::helpers::FieldExtractor;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{
-    parse_macro_input, Data, DeriveInput, Fields
-    ,
-};
-use crate::helpers::FieldExtractor;
+use syn::{Data, DeriveInput, Fields, parse_macro_input};
 
 pub fn node_input_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -21,7 +18,13 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
     let mut decoders: Vec<proc_macro2::TokenStream> = vec![];
     let mut elements: Vec<proc_macro2::TokenStream> = vec![];
 
-    for field in fields.iter().map(FieldExtractor::from) {
+    let fields: Vec<_> = fields.iter().map(FieldExtractor::from).collect();
+
+    let is_list = fields
+        .iter()
+        .any(|field| field.is_wrapped_by_vector());
+
+    for field in fields {
         let property_ident = field.property_ident();
         let value_ident = field.value_ident();
         let options_default = field.options_default();
@@ -63,12 +66,22 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
             })
         }
 
-        let extract_logic = quote! {
+        let extract_type = field.output_ident(is_list);
+        let mut extract_logic = quote! {
             kwargs
                 .and_then(|kwargs| kwargs.get_item(#label).ok())
                 .flatten()
-                .and_then(|value| value.extract::<#value_ident>().ok())
+                .and_then(|value| value.extract::<#extract_type>().ok())
         };
+
+        // If the user has defined **any** input as a Vec, ComfyUI will treat all inputs as lists.
+        // So on the Rust side, when an item is not defined as a list but others are,
+        // the first input is always retrieved from that list instead.
+        if is_list && !field.is_wrapped_by_vector() {
+            extract_logic = quote! {
+                #extract_logic.and_then(|list| list.into_iter().next())
+            }
+        }
 
         // If the field is a `String`, strip out empty values so that the
         // field’s default is used instead of an empty string.
@@ -109,6 +122,10 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
 
                 pyo3::PyResult::Ok(output)
 
+            }
+
+            fn is_input_list() -> bool {
+                #is_list
             }
 
         }

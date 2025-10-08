@@ -36,7 +36,13 @@ pub fn node(_: TokenStream, input: TokenStream) -> TokenStream {
             fn __deprecated() -> bool {
                 Self::DEPRECATED
             }
-
+            
+            #[classattr]
+            #[pyo3(name = "INPUT_IS_LIST")]
+            fn __input_is_list() -> bool {
+                <Self as comfy_builder_core::node::Node>::In::is_input_list()
+            }
+       
             #[classattr]
             #[pyo3(name = "OUTPUT_IS_LIST")]
             fn __output_is_list<'a>(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::types::PyAny>> {

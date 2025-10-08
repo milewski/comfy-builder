@@ -21,7 +21,6 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
         for field in fields_named.named {
             let field = FieldExtractor::from(&field);
             let ident = field.value_ident();
-            let ident_wrapper = field.value_ident_wrapper();
             let property_ident = field.property_ident();
             let named_attributes = field.named_attributes();
 
@@ -36,9 +35,7 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
                 .map(|tooltip| quote! { #tooltip })
                 .unwrap_or_else(|| quote! { "" });
 
-            let is_wrapped_by_vector = ident_wrapper
-                .map(|ident| ident.to_string().as_str() == "Vec")
-                .unwrap_or_default();
+            let is_wrapped_by_vector = field.is_wrapped_by_vector();
 
             let token = quote! {
                 comfy_builder_core::node::DataType::from(stringify!(#ident))

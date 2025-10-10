@@ -1,6 +1,5 @@
-#![allow(unused, dead_code)]
-
 use pyo3::ffi::c_str;
+use pyo3::impl_::pyclass::class_offset;
 use pyo3::impl_::pyfunction::WrapPyFunctionArg;
 use pyo3::prelude::{PyAnyMethods, PyListMethods, PyModule, PyModuleMethods, PyTypeMethods};
 use pyo3::types::{PyDict, PyList, PyTuple, PyType};
@@ -9,10 +8,25 @@ use pyo3::{
     pyfunction, pymethods, pymodule, wrap_pyfunction,
 };
 
-mod nodes;
+struct Awaitable<'py, T> {
+    value: Bound<'py, T>,
+}
 
-#[pyfunction]
-#[pyo3(pass_module)]
+impl<'py, T> IntoPyObject<'py> for Awaitable<'py, T> {
+    type Target = PyAny;
+    type Output = Bound<'py, Self::Target>;
+    type Error = PyErr;
+
+    fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
+        let asyncio = py.import("asyncio")?;
+        let future_class = asyncio.getattr("Future")?;
+        let future = future_class.call0()?;
+        future.call_method1("set_result", (&self.value,))?;
+
+        Ok(future)
+    }
+}
+
 fn extend_class<'py>(
     module: &Bound<'py, PyModule>,
     bases: &Bound<'py, PyTuple>,
@@ -36,148 +50,134 @@ fn comfy_entrypoint<'py>(module: &'py Bound<'py, PyModule>) -> PyResult<Bound<'p
         .import("comfy_api.latest")?
         .getattr("ComfyExtension")?;
 
-    let extension = module.getattr("Extension")?;
+    let extension = module.getattr("RustExtension")?;
 
     let class = extend_class(
         module,
         &(extension, base).into_pyobject(python)?,
-        "ExtensionExtended",
+        "RustExtensionExtended",
     )?;
 
     class.call0()
 }
 
 #[pyclass(subclass)]
-struct MyNode;
+struct RustNode;
 
 #[pymethods]
-impl MyNode {
+impl RustNode {
     #[new]
     pub fn new() -> Self {
         Self
     }
 
-    // fn __input_types<'a>(cls: &pyo3::Bound<'a, pyo3::types::PyType>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::types::PyDict>> {
-    // #[classattr]
-    // fn define_schema<'a>( py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
-    //     println!("----------------------CALLED DEFINE SCHEMA-----------------------------");
-    //     let schema_cls = py
-    //         .import("comfy_api.latest")?
-    //         .getattr("io")?
-    //         .getattr("Schema")?;
+    // #[classmethod]
+    // #[pyo3(name = "GET_BASE_CLASS")]
+    // fn get_base_class<'a>(cls: &pyo3::Bound<'a, pyo3::types::PyType>) -> Option<Bound<'a, PyType>> {
+    //     println!("get_base_class called");
     //
-    //     // Prepare the arguments you want – they can be empty lists,
-    //     // tuples, or whatever the Python implementation expects.
-    //     let inputs = PyList::empty(py); // ← replace with real inputs
-    //     let outputs = PyList::empty(py); // ← replace with real outputs
-    //
-    //     // Call the constructor
-    //     //   Schema(node_id, display_name, category, inputs, outputs)
-    //     let schema_obj = schema_cls.call1((
-    //         "MyNode",      // node_id
-    //         // "My Node",     // display_name
-    //         // "my_category", // category
-    //         // inputs,
-    //         // outputs,
-    //     ))?;
-    //
-    //     // Return the *Python* object (it is a Schema instance)
-    //     Ok(schema_obj)
+    //     None
     // }
-}
 
-struct ImmediateAwaitable<'py> {
-    /// The value that the awaitable will return
-    value: Bound<'py, PyList>,
-}
-
-impl<'py> ImmediateAwaitable<'py> {
-    fn new(value: Bound<'py, PyList>) -> Self {
-        Self { value }
-    }
-
-    fn __await__(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-        let asyncio = py.import("asyncio")?;
-
-        // 2. Create a Future instance
-        let future_cls = asyncio.getattr("Future")?;
-        let fut = future_cls.call0()?;
-
-        // 3. Set its result to our stored value
-        fut.call_method1("set_result", (&self.value,))?;
-
-        Ok(fut)
+    #[classmethod]
+    fn define_schema<'a>(
+        cls: &pyo3::Bound<'a, pyo3::types::PyType>,
+    ) -> pyo3::PyResult<Bound<'a, PyType>> {
+        println!("defined schema function called...");
+        Ok(cls.get_type())
     }
 }
 
-impl<'py> IntoPyObject<'py> for ImmediateAwaitable<'py> {
-    type Target = PyAny;
-    type Output = Bound<'py, Self::Target>;
-    type Error = PyErr;
+#[pyfunction]
+fn define_schema<'a>(cls: &pyo3::Bound<'a, pyo3::types::PyType>) -> PyResult<Bound<'a, PyAny>> {
+    println!("defined schema function called...");
 
-    fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
-        self.__await__(py)
-    }
+    let py = cls.py();
+    let io = py.import("comfy_api.latest")?.getattr("io")?;
+
+    let dict = PyDict::new(py);
+    dict.set_item("default", 0)?;
+    dict.set_item("min", 0)?;
+    dict.set_item("max", 4096)?;
+    dict.set_item("step", 64)?;
+
+    let int_input = io
+        .getattr("Int")?
+        .getattr("Input")?
+        .call1(("int_field", Some(&dict)))?;
+
+    // 3️⃣ Build the keyword‑argument dictionary that will be passed to the
+    //     dataclass constructor.
+    let kwargs = PyDict::new(py);
+    kwargs.set_item("node_id", "Example")?;
+    kwargs.set_item("display_name", "Example Node")?;
+    kwargs.set_item("category", "examples")?;
+    kwargs.set_item("description", "Node description here")?;
+    kwargs.set_item("inputs", PyList::new(py, &[int_input])?)?;
+    // kwargs.set_item("outputs", PyList::new(py, &[io.getattr("Image")?.getattr("Output")?.call0()?]))?;
+
+    // 4️⃣ Call the constructor (`io.Schema(...)`).
+    let schema_cls = io.getattr("Schema")?;
+
+    Ok(schema_cls.call((), Some(&kwargs))?)
+}
+
+#[pyfunction]
+fn execute() {
+    println!("execute function called...");
 }
 
 #[pyclass(subclass)]
-struct Extension;
+struct RustExtension;
 
 #[pymethods]
-impl Extension {
+impl RustExtension {
     #[new]
     pub fn new() -> Self {
         Self
     }
 
-    #[staticmethod]
-    fn get_node_list<'a>(python: Python<'a>) -> PyResult<ImmediateAwaitable<'a>> {
-        println!("GETTING LIST --------------------------->");
-
+    #[classmethod]
+    fn get_node_list<'a>(
+        _cls: Bound<'a, PyType>,
+        python: Python<'a>,
+    ) -> PyResult<Awaitable<'a, PyList>> {
         let base = python
             .import("comfy_api.latest")?
             .getattr("io")?
             .getattr("ComfyNode")?;
 
         let module = python.import("comfy_builder_custom_nodes")?;
-        let attribute = module.getattr("MyNode")?;
+        let attribute = module.getattr("RustNode")?;
 
+        module.add_function(wrap_pyfunction!(define_schema, &module)?)?;
+        module.add_function(wrap_pyfunction!(execute, &module)?)?;
+
+        /////
+        let methods = PyDict::new(python);
+        let builtins = python.import("builtins")?;
+        let type_fn = builtins.getattr("type")?;
+        let object_type = builtins.getattr("object")?;
+        let classmethod_ctor = builtins.getattr("classmethod")?;
+
+        let rust_define = module.getattr("define_schema")?;
+        let rust_execute = module.getattr("define_schema")?;
+
+        let define_cm = classmethod_ctor.call1((rust_define,))?;
+        let execute_cm = classmethod_ctor.call1((rust_execute,))?;
+
+        methods.set_item("define_schema", define_cm)?;
+        methods.set_item("execute", execute_cm)?;
+
+        let object_cls = type_fn.call1(("RustNode", (base,), methods))?;
+        module.add("RustNode", &object_cls)?;
+
+        ////
         let list = PyList::empty(python);
-        let class = extend_class(
-            &module,
-            &(attribute, base).into_pyobject(python)?,
-            "MyNodeExtended",
-        )?;
+        list.append(object_cls)?;
 
-        list.append(class)?;
-
-        Ok(ImmediateAwaitable::new(list))
+        Ok(Awaitable { value: list })
     }
-}
-
-#[pyfunction]
-#[pyo3(pass_module)]
-fn define_schema<'py>(module: &Bound<'py, PyModule>) -> PyResult<Bound<'py, PyAny>> {
-    println!("------------------------------------------------------------- define_schema");
-    let py = module.py();
-    let schema_cls = py
-        .import("comfy_api.latest")?
-        .getattr("io")?
-        .getattr("Schema")?;
-
-    let inputs = PyList::empty(py);
-    let outputs = PyList::empty(py);
-
-    let schema_obj = schema_cls.call1((
-        "MyNode",  // node_id
-        "My Node", // display_name
-        "my_category", // category
-                   // inputs,
-                   // outputs,
-    ))?;
-
-    // Return the *Python* object (it is a Schema instance)
-    Ok(schema_obj)
 }
 
 #[pymodule]
@@ -185,18 +185,9 @@ fn comfy_builder_custom_nodes(
     python: pyo3::Python,
     module: &pyo3::Bound<'_, pyo3::prelude::PyModule>,
 ) -> PyResult<()> {
-    module.add_class::<Extension>()?;
-    module.add_class::<MyNode>()?;
-    // module.add_class::<StringConcatenate>()?;
-    // module.add_class::<StringExtension>()?;
-    // module.add("StringConcatenate", StringConcatenate)?;
-    // module.add("StringExtension", StringExtension)?;
-    module.add_function(wrap_pyfunction!(define_schema, module)?)?;
-    // module.add_function(wrap_pyfunction!(comfy_entrypoint, module)?)?;
-
-    // module.add_function(wrap_pyfunction!(define_schema, module)?)?;
-    //
-    // module.add("something_nobel", wrap_pyfunction!(define_schema, module)?)?;
+    module.add_class::<RustNode>()?;
+    module.add_class::<RustExtension>()?;
+    module.add_function(wrap_pyfunction!(comfy_entrypoint, module)?)?;
 
     Ok(())
 }

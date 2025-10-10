@@ -101,42 +101,58 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
 
     TokenStream::from(quote! {
 
-        use comfy_builder_core::node::EnumVariants;
-        use comfy_builder_core::node::InputPort;
-        use pyo3::prelude::*;
+        // use comfy_builder_core::node::EnumVariants;
+        // use comfy_builder_core::node::InputPort;
+        // use pyo3::prelude::*;
+        // use comfy_builder_core::prelude::*;
 
-        impl<'a> comfy_builder_core::node::InputPort<'a> for #name {
+        // impl<'a> comfy_builder_core::node::InputPort<'a> for #name {
+        //
+        //     fn get_inputs(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::types::PyDict>> {
+        //
+        //         let output = pyo3::types::PyDict::new(py);
+        //         let required = pyo3::types::PyDict::new(py);
+        //         let optional = pyo3::types::PyDict::new(py);
+        //         let hidden = pyo3::types::PyDict::new(py);
+        //
+        //         #(#elements)*
+        //
+        //         output.set_item("required", required)?;
+        //         output.set_item("optional", optional)?;
+        //         output.set_item("hidden", hidden)?;
+        //
+        //         pyo3::PyResult::Ok(output)
+        //
+        //     }
+        //
+        //     fn is_input_list() -> bool {
+        //         #is_list
+        //     }
+        //
+        // }
+        //
+        // impl<'a> std::convert::From<Option<&'a pyo3::Bound<'a, pyo3::types::PyDict>>> for #name {
+        //     fn from(kwargs: Option<&'a pyo3::Bound<'a, pyo3::types::PyDict>>) -> Self {
+        //         #name {
+        //             #(#decoders)*
+        //         }
+        //     }
+        // }
 
-            fn get_inputs(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::types::PyDict>> {
-
-                let output = pyo3::types::PyDict::new(py);
-                let required = pyo3::types::PyDict::new(py);
-                let optional = pyo3::types::PyDict::new(py);
-                let hidden = pyo3::types::PyDict::new(py);
-
-                #(#elements)*
-
-                output.set_item("required", required)?;
-                output.set_item("optional", optional)?;
-                output.set_item("hidden", hidden)?;
-
-                pyo3::PyResult::Ok(output)
-
-            }
-
-            fn is_input_list() -> bool {
-                #is_list
-            }
-
-        }
-
-        impl<'a> std::convert::From<Option<&'a pyo3::Bound<'a, pyo3::types::PyDict>>> for #name {
-            fn from(kwargs: Option<&'a pyo3::Bound<'a, pyo3::types::PyDict>>) -> Self {
+        impl<'a> From<comfy_builder_core::prelude::Kwargs<'a>> for #name {
+            fn from(kwargs: comfy_builder_core::prelude::Kwargs) -> Self {
                 #name {
-                    #(#decoders)*
+                    number: kwargs
+                        .as_ref()
+                        .and_then(|kwargs| kwargs.get_item("number").ok())
+                        .flatten()
+                        .and_then(|value| value.extract::<usize>().ok())
+                        .unwrap(),
                 }
             }
         }
+
+        impl<'a> comfy_builder_core::prelude::In<'a> for #name {}
 
     })
 }

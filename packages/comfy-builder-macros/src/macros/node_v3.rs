@@ -10,12 +10,6 @@ pub fn node(_: TokenStream, input: TokenStream) -> TokenStream {
         use pyo3::prelude::*;
         use comfy_builder_core::node::OutputPort;
 
-        inventory::submit! {
-            comfy_builder_core::registry::NodeRegistration::new::<#ident>()
-        }
-
-        #[pyo3::pyclass]
-        #[derive(std::default::Default)]
         #input_struct
 
         #[pyo3::pymethods]

@@ -26,21 +26,33 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
         let value_ident = field.value_ident();
         let options_default = field.options_default();
         let options = field.options();
-        let named_attributes = field.named_attributes();
+        let mut named_attributes = field.named_attributes();
+
+        let display_name = named_attributes
+            .remove("display_name")
+            .map(|label| quote! { #label })
+            .unwrap_or_else(|| quote! { stringify!(#property_ident) });
+
+        let extra: Vec<proc_macro2::TokenStream> = named_attributes
+            .into_iter()
+            .map(|(key, value)| quote! { extra.set_item(#key, #value)?; })
+            .collect();
+
+        let is_optional = field.is_optional();
 
         if field.is_primitive() {
             elements.push(quote! {
                 {
-                    let dict = pyo3::types::PyDict::new(python);
+                    let extra = pyo3::types::PyDict::new(python);
+                    
+                    #(#extra)*
+                    
+                    let kind = comfy_builder_core::ComfyDataTypes::from(stringify!(#value_ident));
+                    let dict = kind.to_type().into_dict(python, &io, extra)?;
 
-                    dict.set_item("default", 0)?;
-                    dict.set_item("min", 0)?;
-                    dict.set_item("max", 100)?;
-                    dict.set_item("step", 1)?;
+                    dict.set_item("optional", #is_optional)?;
 
-                    let kind = comfy_builder_core::ComfyDataTypes::from(stringify!(#value_ident)).to_comfy();
-
-                    io.getattr(kind)?.getattr("Input")?.call1((stringify!(#property_ident), Some(&dict)))?
+                    io.getattr(kind.to_comfy())?.getattr("Input")?.call((#display_name,), Some(&dict))?
                 }
             });
         }
@@ -163,13 +175,12 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
         // }
 
         impl<'py> comfy_builder_core::prelude::In<'py> for #name {
-            fn blueprints(python: pyo3::Python<'py>) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::types::PyList>> {
-                let io = python.import("comfy_api.latest")?.getattr("io")?;
+            fn blueprints(python: pyo3::Python<'py>, io: &pyo3::Bound<'py, pyo3::PyAny>) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::types::PyList>> {
                 pyo3::types::PyList::new(python,[#(#elements),*])
             }
         }
 
-        impl<'a> From<comfy_builder_core::prelude::Kwargs<'a>> for #name {
+        impl<'py> From<comfy_builder_core::prelude::Kwargs<'py>> for #name {
             fn from(kwargs: comfy_builder_core::prelude::Kwargs) -> Self {
                 #name {
                     #(#decoders),*

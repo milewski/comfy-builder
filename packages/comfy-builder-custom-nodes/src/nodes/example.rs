@@ -5,7 +5,7 @@ struct Example;
 
 #[derive(NodeInput)]
 pub struct Input {
-    left: usize,
+    left: i8,
     right: usize,
     string: String,
 }
@@ -22,7 +22,7 @@ impl<'a> Node<'a> for Example {
 
     fn execute(&self, input: Self::In) -> Self::Out {
         Output {
-            number: input.left + input.right,
+            number: input.left as usize + input.right,
             string: input.string,
         }
     }

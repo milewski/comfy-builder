@@ -102,10 +102,8 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
         //
         // }
 
-        impl comfy_builder_core::prelude::Out for #name {
-            fn blueprints(python: pyo3::Python) -> pyo3::PyResult<pyo3::Bound<pyo3::types::PyList>> {
-                let io = python.import("comfy_api.latest")?.getattr("io")?;
-
+        impl<'py> comfy_builder_core::prelude::Out<'py> for #name {
+            fn blueprints(python: pyo3::Python<'py>, io: &pyo3::Bound<'py, pyo3::PyAny>) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::types::PyList>> {
                 pyo3::types::PyList::new(python,[#(#inserts),*])
             }
 

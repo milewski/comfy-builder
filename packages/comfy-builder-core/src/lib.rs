@@ -1,6 +1,6 @@
-use pyo3::prelude::PyDictMethods;
+use crate::types::IntoDict;
 use pyo3::types::{PyCFunction, PyDict, PyList, PyTuple};
-use pyo3::{Bound, IntoPyObject, PyResult, Python};
+use pyo3::{Bound, IntoPyObject, PyAny, PyResult, Python};
 use std::ops::Deref;
 
 pub mod attributes;
@@ -8,40 +8,41 @@ pub mod node;
 pub mod prelude;
 pub mod registry;
 pub mod tensors;
+pub mod types;
 
-#[derive(Default)]
-pub struct Int<T> {
-    pub default: T,
-    pub min: T,
-    pub max: T,
-    pub step: T,
-}
-
-pub trait IntoPyDict<'py> {
-    fn to_dict(self, python: Python<'py>) -> PyResult<Bound<'py, PyDict>>;
-}
-
-impl<'py, T: IntoPyObject<'py>> IntoPyDict<'py> for Int<T> {
-    fn to_dict(self, python: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
-        let dict = PyDict::new(python);
-        dict.set_item("default", self.default)?;
-        dict.set_item("min", self.min)?;
-        dict.set_item("max", self.max)?;
-        dict.set_item("step", self.step)?;
-
-        Ok(dict)
-    }
-}
+// #[derive(Default)]
+// pub struct Int<T> {
+//     pub default: T,
+//     pub min: T,
+//     pub max: T,
+//     pub step: T,
+// }
+//
+// pub trait IntoPyDict<'py> {
+//     fn to_dict(self, python: Python<'py>) -> PyResult<Bound<'py, PyDict>>;
+// }
+//
+// impl<'py, T: IntoPyObject<'py>> IntoPyDict<'py> for Int<T> {
+//     fn to_dict(self, python: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
+//         let dict = PyDict::new(python);
+//         dict.set_item("default", self.default)?;
+//         dict.set_item("min", self.min)?;
+//         dict.set_item("max", self.max)?;
+//         dict.set_item("step", self.step)?;
+//
+//         Ok(dict)
+//     }
+// }
 
 // dict.set_item("default", 0)?;
 // dict.set_item("min", 0)?;
 // dict.set_item("max", 4096)?;
 // dict.set_item("step", 64)?;
 
-pub struct Kwargs<'a>(pub Option<Bound<'a, PyDict>>);
+pub struct Kwargs<'py>(pub Option<Bound<'py, PyDict>>);
 
-impl<'a> From<Option<Bound<'a, PyDict>>> for Kwargs<'a> {
-    fn from(value: Option<Bound<'a, PyDict>>) -> Self {
+impl<'py> From<Option<Bound<'py, PyDict>>> for Kwargs<'py> {
+    fn from(value: Option<Bound<'py, PyDict>>) -> Self {
         Kwargs(value)
     }
 }
@@ -59,13 +60,13 @@ impl<'a> From<Kwargs<'a>> for () {
 }
 
 impl<'py> In<'py> for () {
-    fn blueprints(python: Python<'py>) -> PyResult<Bound<'py, PyList>> {
+    fn blueprints(python: Python<'py>, _: &Bound<PyAny>) -> PyResult<Bound<'py, PyList>> {
         Ok(PyList::empty(python))
     }
 }
 
-impl Out for () {
-    fn blueprints(python: Python) -> PyResult<Bound<PyList>> {
+impl<'py> Out<'py> for () {
+    fn blueprints(python: Python<'py>, _: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyList>> {
         Ok(PyList::empty(python))
     }
 
@@ -75,17 +76,17 @@ impl Out for () {
 }
 
 pub trait In<'py>: From<Kwargs<'py>> {
-    fn blueprints(python: Python<'py>) -> PyResult<Bound<'py, PyList>>;
+    fn blueprints(python: Python<'py>, io: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyList>>;
 }
 
-pub trait Out {
-    fn blueprints(python: Python) -> PyResult<Bound<PyList>>;
+pub trait Out<'py> {
+    fn blueprints(python: Python<'py>, io: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyList>>;
     fn to_schema(self, python: Python) -> PyResult<Bound<PyTuple>>;
 }
 
 pub trait Node<'a>: Default {
     type In: In<'a>;
-    type Out: Out;
+    type Out: Out<'a>;
 
     fn new() -> Self {
         Default::default()
@@ -104,23 +105,52 @@ pub trait ExtractNodeFunctions {
 }
 
 pub enum ComfyDataTypes {
-    Int,
+    Int(&'static str),
     String,
 }
+
+// fn test() {
+//     Python::attach(|py| {
+//         let kind = ComfyDataTypes::from("usize").to_type();
+//         let kind = kind.into_dict(py).unwrap();
+//     })
+// }
 
 impl ComfyDataTypes {
     pub fn to_comfy(&self) -> String {
         match self {
-            ComfyDataTypes::Int => "Int".to_string(),
+            ComfyDataTypes::Int(_) => "Int".to_string(),
             ComfyDataTypes::String => "String".to_string(),
+        }
+    }
+
+    pub fn to_type<'py>(&self) -> Box<dyn IntoDict<'py>> {
+        match *self {
+            ComfyDataTypes::Int(value) => match value {
+                "i8" => Box::new(types::int::Int::<i8>::default()),
+                "i16" => Box::new(types::int::Int::<i16>::default()),
+                "i32" => Box::new(types::int::Int::<i32>::default()),
+                "i64" => Box::new(types::int::Int::<i64>::default()),
+                "i128" => Box::new(types::int::Int::<i128>::default()),
+                "isize" => Box::new(types::int::Int::<isize>::default()),
+                "u8" => Box::new(types::int::Int::<i8>::default()),
+                "u16" => Box::new(types::int::Int::<i16>::default()),
+                "u32" => Box::new(types::int::Int::<i32>::default()),
+                "u64" => Box::new(types::int::Int::<i64>::default()),
+                "u128" => Box::new(types::int::Int::<i128>::default()),
+                "usize" => Box::new(types::int::Int::<isize>::default()),
+                value => unreachable!("invalid int type {}", value),
+            },
+            ComfyDataTypes::String => Box::new(types::string::String::default()),
         }
     }
 }
 
-impl From<&str> for ComfyDataTypes {
-    fn from(value: &str) -> Self {
+impl From<&'static str> for ComfyDataTypes {
+    fn from(value: &'static str) -> Self {
         match value {
-            "usize" => ComfyDataTypes::Int,
+            "i8" | "i16" | "i32" | "i64" | "i128" | "isize" => ComfyDataTypes::Int(value),
+            "u8" | "u16" | "u32" | "u64" | "u128" | "usize" => ComfyDataTypes::Int(value),
             "String" => ComfyDataTypes::String,
             kind => panic!("Unknown data type {:?}", kind),
         }

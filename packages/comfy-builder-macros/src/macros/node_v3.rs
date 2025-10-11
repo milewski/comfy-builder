@@ -43,11 +43,11 @@ pub fn node(_: TokenStream, input: TokenStream) -> TokenStream {
         }
 
         #[pyfunction]
-        fn __define_schema<'a>(class: pyo3::Bound<'a, pyo3::types::PyType>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::PyAny>> {
+        fn __define_schema<'py>(class: pyo3::Bound<'py, pyo3::types::PyType>) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::PyAny>> {
             let python = class.py();
             let io = python.import("comfy_api.latest")?.getattr("io")?;
-            let inputs = <#ident as comfy_builder_core::prelude::Node>::In::blueprints(python)?;
-            let outputs = <#ident as comfy_builder_core::prelude::Node>::Out::blueprints(python)?;
+            let inputs = <#ident as comfy_builder_core::prelude::Node>::In::blueprints(python, &io)?;
+            let outputs = <#ident as comfy_builder_core::prelude::Node>::Out::blueprints(python, &io)?;
 
             let kwargs = pyo3::types::PyDict::new(python);
 

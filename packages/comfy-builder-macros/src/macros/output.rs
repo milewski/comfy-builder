@@ -68,34 +68,56 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(quote! {
         use pyo3::prelude::*;
 
-        impl<'a> comfy_builder_core::node::OutputPort<'a> for #name {
-            fn get_outputs() -> indexmap::IndexMap<&'static str, (&'static str, comfy_builder_core::node::DataType)> {
-                let mut map = indexmap::IndexMap::new();
-                #(#field_inserts)*
-                map
+        // impl<'a> comfy_builder_core::node::OutputPort<'a> for #name {
+        //     fn get_outputs() -> indexmap::IndexMap<&'static str, (&'static str, comfy_builder_core::node::DataType)> {
+        //         let mut map = indexmap::IndexMap::new();
+        //         #(#field_inserts)*
+        //         map
+        //     }
+        //
+        //     fn get_tooltips() -> Vec<&'static str> {
+        //         let mut map = Vec::new();
+        //         #(#tooltips_inserts)*
+        //         map
+        //     }
+        //
+        //     fn get_output_list() -> Vec<bool> {
+        //         let mut map = Vec::new();
+        //         #(#output_list_inserts)*
+        //         map
+        //     }
+        // }
+        //
+        // impl<'py> pyo3::IntoPyObject<'py> for #name {
+        //     type Target = pyo3::types::PyTuple;
+        //     type Output = pyo3::Bound<'py, Self::Target>;
+        //     type Error = pyo3::PyErr;
+        //
+        //     fn into_pyobject(self, py: pyo3::Python<'py>) -> Result<Self::Output, Self::Error> {
+        //         #body
+        //     }
+        // }
+
+        // impl<'a> From<comfy_builder_core::prelude::Kwargs<'a>> for #name {
+        //     fn from(kwargs: comfy_builder_core::prelude::Kwargs) -> Self {
+        //         #name {
+        //             number: kwargs
+        //                 .as_ref()
+        //                 .and_then(|kwargs| kwargs.get_item("number").ok())
+        //                 .flatten()
+        //                 .and_then(|value| value.extract::<usize>().ok())
+        //                 .unwrap(),
+        //         }
+        //     }
+        // }
+
+        impl comfy_builder_core::prelude::Out for #name {
+
+            fn to_schema<'py>(&self, python: pyo3::Python<'py>) -> PyResult<pyo3::Bound<'py, pyo3::types::PyTuple>> {
+                (self.number,).into_pyobject(python)
             }
 
-            fn get_tooltips() -> Vec<&'static str> {
-                let mut map = Vec::new();
-                #(#tooltips_inserts)*
-                map
-            }
-
-            fn get_output_list() -> Vec<bool> {
-                let mut map = Vec::new();
-                #(#output_list_inserts)*
-                map
-            }
         }
 
-        impl<'py> pyo3::IntoPyObject<'py> for #name {
-            type Target = pyo3::types::PyTuple;
-            type Output = pyo3::Bound<'py, Self::Target>;
-            type Error = pyo3::PyErr;
-
-            fn into_pyobject(self, py: pyo3::Python<'py>) -> Result<Self::Output, Self::Error> {
-                #body
-            }
-        }
     })
 }

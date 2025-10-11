@@ -152,7 +152,11 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
             }
         }
 
-        impl<'a> comfy_builder_core::prelude::In<'a> for #name {}
+        impl<'py> comfy_builder_core::prelude::In<'py> for #name {
+            fn blueprints(python: pyo3::Python<'py>) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::types::PyList>> {
+                Ok(pyo3::types::PyList::empty(python))
+            }
+        }
 
     })
 }

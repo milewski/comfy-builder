@@ -1,5 +1,6 @@
-use comfy_builder_core::prelude::{Node, NodeInput};
+use comfy_builder_core::prelude::{Node, NodeInput, NodeOutput};
 use pyo3::prelude::{PyAnyMethods, PyDictMethods};
+use comfy_builder_core::Kwargs;
 
 #[derive(Default)]
 pub struct Example;
@@ -9,16 +10,18 @@ pub struct Input {
     number: usize,
 }
 
-#[derive(NodeInput)]
-pub struct Input2 {
+#[derive(NodeOutput)]
+pub struct Output {
     number: usize,
 }
 
 impl<'a> Node<'a> for Example {
     type In = Input;
-    type Out = ();
+    type Out = Output;
 
     fn execute(&self, input: Self::In) -> Self::Out {
-        println!("Received {:?}", input.number);
+        Output {
+            number: input.number + 1,
+        }
     }
 }

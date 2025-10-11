@@ -1,6 +1,6 @@
+use pyo3::types::{PyDict, PyList, PyTuple};
+use pyo3::{Bound, IntoPyObject, Py, PyResult, Python};
 use std::ops::Deref;
-use pyo3::Bound;
-use pyo3::types::PyDict;
 
 pub mod attributes;
 pub mod node;
@@ -28,11 +28,25 @@ impl<'a> From<Kwargs<'a>> for () {
     fn from(_: Kwargs<'a>) -> Self {}
 }
 
-impl<'a> In<'a> for () {}
-impl Out for () {}
+impl<'py> In<'py> for () {
+    fn blueprints(python: Python<'py>) -> PyResult<Bound<'py, PyList>> {
+        Ok(PyList::empty(python))
+    }
+}
 
-pub trait In<'a>: From<Kwargs<'a>> {}
-pub trait Out {}
+impl Out for () {
+    fn to_schema<'a>(&self, python: Python<'a>) -> PyResult<Bound<'a, PyTuple>> {
+        ((),).into_pyobject(python)
+    }
+}
+
+pub trait In<'py>: From<Kwargs<'py>> {
+    fn blueprints(python: Python<'py>) -> PyResult<Bound<'py, PyList>>;
+}
+
+pub trait Out {
+    fn to_schema<'a>(&self, python: Python<'a>) -> PyResult<Bound<'a, PyTuple>>;
+}
 
 pub trait Node<'a> {
     type In: In<'a>;

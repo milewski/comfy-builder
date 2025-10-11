@@ -302,6 +302,7 @@ dependencies = [
  "comfy-builder-macros",
  "indexmap",
  "inventory",
+ "num-traits",
  "numpy",
  "pyo3",
 ]

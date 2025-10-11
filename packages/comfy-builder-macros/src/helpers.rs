@@ -77,6 +77,12 @@ impl<'a> FieldExtractor<'a> {
         matches!(kind_str.as_str(), "String")
     }
 
+    pub fn is_numeric(&self) -> bool {
+        let kind_str = self.value_ident().to_string();
+
+        matches!(kind_str.as_str(),numeric_types!())
+    }
+
     pub fn is_tensor_type(&self) -> bool {
         let kind_str = self.value_ident().to_string();
 

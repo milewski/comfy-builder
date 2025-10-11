@@ -13,57 +13,36 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
     };
 
     let mut field_inserts: Vec<proc_macro2::TokenStream> = Vec::new();
-    let mut tooltips_inserts: Vec<proc_macro2::TokenStream> = Vec::new();
-    let mut output_list_inserts: Vec<proc_macro2::TokenStream> = Vec::new();
-    let mut into_pyobject_fields = Vec::new();
+    let mut inserts: Vec<proc_macro2::TokenStream> = Vec::new();
+    // let mut tooltips_inserts: Vec<proc_macro2::TokenStream> = Vec::new();
+    // let mut output_list_inserts: Vec<proc_macro2::TokenStream> = Vec::new();
+    // let mut into_pyobject_fields = Vec::new();
 
     if let Fields::Named(fields_named) = fields {
         for field in fields_named.named {
             let field = FieldExtractor::from(&field);
-            let ident = field.value_ident();
+            let value_ident = field.value_ident();
             let property_ident = field.property_ident();
             let named_attributes = field.named_attributes();
 
-            let label = named_attributes
-                .get("label")
-                .map(|label| quote! { #label })
-                .unwrap_or_else(|| quote! { stringify!(#property_ident) });
-
-            let tooltip = named_attributes
-                .get("tooltip")
-                .or_else(|| named_attributes.get("doc"))
-                .map(|tooltip| quote! { #tooltip })
-                .unwrap_or_else(|| quote! { "" });
-
-            let is_wrapped_by_vector = field.is_wrapped_by_vector();
-
-            let token = quote! {
-                comfy_builder_core::node::DataType::from(stringify!(#ident))
-            };
-
-            tooltips_inserts.push(quote! {
-                map.push(#tooltip);
-            });
-
-            output_list_inserts.push(quote! {
-                map.push(#is_wrapped_by_vector);
-            });
-
             field_inserts.push(quote! {
-                map.insert(stringify!(#property_ident), (#label, #token));
+                self.#property_ident.into_py_any(python)?
             });
 
-            into_pyobject_fields.push(quote! {
-                self.#property_ident.into_pyobject(py)?,
+            inserts.push(quote! {
+                {
+                    let kind = comfy_builder_core::ComfyDataTypes::from(stringify!(#value_ident)).to_comfy();
+                    io.getattr(kind)?.getattr("Output")?.call0()?
+                }
             });
         }
     }
 
-    let body = if into_pyobject_fields.is_empty() {
-        quote! { Ok(pyo3::types::PyTuple::empty(py).into_pyobject(py)?) }
-    } else {
-        quote! { (#(#into_pyobject_fields)*).into_pyobject(py) }
-    };
+    // let body = if into_pyobject_fields.is_empty() {
+    //     quote! { Ok(pyo3::types::PyTuple::empty(py).into_pyobject(py)?) }
+    // } else {
+    //     quote! { (#(#into_pyobject_fields)*).into_pyobject(py) }
+    // };
 
     TokenStream::from(quote! {
         use pyo3::prelude::*;
@@ -111,12 +90,28 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
         //     }
         // }
 
-        impl comfy_builder_core::prelude::Out for #name {
+        // impl comfy_builder_core::prelude::Out for #name {
+        //
+        //     fn to_schema<'py>(&self, python: pyo3::Python<'py>) -> PyResult<pyo3::Bound<'py, pyo3::types::PyTuple>> {
+        //         // (self.number,).into_pyobject(python)
+        //
+        //         // pyo3::types::PyTuple::new(python, #(#field_inserts)*)
+        //         pyo3::types::PyTuple::new(python, [#(#field_inserts)*])
+        //
+        //     }
+        //
+        // }
 
-            fn to_schema<'py>(&self, python: pyo3::Python<'py>) -> PyResult<pyo3::Bound<'py, pyo3::types::PyTuple>> {
-                (self.number,).into_pyobject(python)
+        impl comfy_builder_core::prelude::Out for #name {
+            fn blueprints(python: pyo3::Python) -> pyo3::PyResult<pyo3::Bound<pyo3::types::PyList>> {
+                let io = python.import("comfy_api.latest")?.getattr("io")?;
+
+                pyo3::types::PyList::new(python,[#(#inserts),*])
             }
 
+            fn to_schema(self, python: pyo3::Python) -> pyo3::PyResult<pyo3::Bound<pyo3::types::PyTuple>> {
+                pyo3::types::PyTuple::new(python,[#(#field_inserts),*])
+            }
         }
 
     })

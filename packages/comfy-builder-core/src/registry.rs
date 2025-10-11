@@ -1,45 +1,63 @@
-use pyo3::prelude::PyModule;
-use pyo3::types::{PyDict, PyDictMethods, PyModuleMethods};
-use pyo3::{Bound, PyClass, PyResult, Python};
+use pyo3::prelude::{PyAnyMethods, PyModule};
+use pyo3::types::{PyCFunction, PyDict, PyDictMethods, PyModuleMethods};
+use pyo3::{
+    Bound, FromPyObject, Py, PyAny, PyClass, PyResult, Python, pyfunction, wrap_pyfunction,
+};
+use std::marker::PhantomData;
+use crate::{ExtractNodeFunctions, Node};
 
-pub trait Registerable: PyClass {}
+pub trait Registerable {}
 
 #[derive(Debug)]
 pub struct NodeRegistration {
     #[allow(clippy::type_complexity)]
     inner: fn(
         python: Python,
-        module: &Bound<PyModule>,
-        class: &Bound<PyDict>,
-        display: &Bound<PyDict>,
-    ) -> PyResult<()>,
+        // module: &Bound<PyModule>,
+        // class: &Bound<PyDict>,
+        // display: &Bound<PyDict>,
+    ) -> PyResult<(Bound<PyCFunction>, Bound<PyCFunction>)>,
 }
 
 impl NodeRegistration {
-    pub const fn new<T: Registerable>() -> Self {
+    pub const fn new<'a, T: ExtractNodeFunctions>() -> Self {
         Self {
-            inner: |python, module, class, display| {
-                module.add_class::<T>()?;
+            inner: |python: Python| {
+                let define_schema = T::define_function(python)?;
+                let execute = T::run_function(python)?;
 
-                let type_name = std::any::type_name::<T>();
-                let class_name = type_name.split("::").last().unwrap_or(type_name);
-
-                class.set_item(class_name, python.get_type::<T>())?;
-                display.set_item(class_name, class_name)?;
-
-                Ok(())
+                Ok((define_schema, execute))
             },
         }
     }
 
-    pub fn register(
+    // pub fn register(
+    //     &self,
+    //     python: Python,
+    //     module: &Bound<PyModule>,
+    //     class: &Bound<PyDict>,
+    //     display: &Bound<PyDict>,
+    // ) -> PyResult<()> {
+    //     (self.inner)(python, module, class, display)
+    // }
+
+    pub fn register_v2<'a>(
         &self,
-        python: Python,
-        module: &Bound<PyModule>,
-        class: &Bound<PyDict>,
-        display: &Bound<PyDict>,
-    ) -> PyResult<()> {
-        (self.inner)(python, module, class, display)
+        python: Python<'a>,
+        decorator: &Bound<'a, PyAny>,
+        type_fn: &Bound<'a, PyAny>,
+        comfy_node: &Bound<'a, PyAny>,
+    ) -> PyResult<Bound<'a, PyAny>> {
+        let (define, execute) = (self.inner)(python)?;
+
+        let methods = PyDict::new(python);
+        let define_schema_function = decorator.call1((define,))?;
+        let execute_function = decorator.call1((execute,))?;
+
+        methods.set_item("define_schema", define_schema_function)?;
+        methods.set_item("execute", execute_function)?;
+
+        type_fn.call1(("RustNode", (comfy_node,), methods))
     }
 }
 

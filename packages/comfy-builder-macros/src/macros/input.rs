@@ -15,88 +15,111 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
         _ => panic!("NodeInput only works on structs"),
     };
 
-    let mut decoders: Vec<proc_macro2::TokenStream> = vec![];
     let mut elements: Vec<proc_macro2::TokenStream> = vec![];
+    let mut decoders: Vec<proc_macro2::TokenStream> = vec![];
 
     let fields: Vec<_> = fields.iter().map(FieldExtractor::from).collect();
-
-    let is_list = fields
-        .iter()
-        .any(|field| field.is_wrapped_by_vector());
+    // let is_list = fields.iter().any(|field| field.is_wrapped_by_vector());
 
     for field in fields {
         let property_ident = field.property_ident();
         let value_ident = field.value_ident();
         let options_default = field.options_default();
         let options = field.options();
-
         let named_attributes = field.named_attributes();
-        let label = named_attributes
-            .get("label")
-            .map(|label| quote! { #label })
-            .unwrap_or_else(|| quote! { stringify!(#property_ident) });
 
-        let bucket = if field.is_required() {
-            quote! { required }
-        } else {
-            quote! { optional }
-        };
-
-        if field.is_primitive() || field.is_tensor_type() {
+        if field.is_primitive() {
             elements.push(quote! {
-                let dict = pyo3::types::PyDict::new(py);
-                let data_type = comfy_builder_core::node::DataType::from(stringify!(#value_ident)).to_string();
+                {
+                    let dict = pyo3::types::PyDict::new(python);
 
-                #options_default
-                #options
+                    dict.set_item("default", 0)?;
+                    dict.set_item("min", 0)?;
+                    dict.set_item("max", 100)?;
+                    dict.set_item("step", 1)?;
 
-                #bucket.set_item(#label, (data_type, dict))?;
+                    let kind = comfy_builder_core::ComfyDataTypes::from(stringify!(#value_ident)).to_comfy();
+
+                    io.getattr(kind)?.getattr("Input")?.call1((stringify!(#property_ident), Some(&dict)))?
+                }
             });
         }
 
-        if field.is_enum() {
-            elements.push(quote! {
-                #bucket.set_item(#label, (#value_ident::variants(),))?;
-            });
-        }
-
-        if let Some(token) = field.get_hidden_tokens() {
-            elements.push(quote! {
-                hidden.set_item(#label, #token)?;
-            })
-        }
-
-        let extract_type = field.output_ident(is_list);
-        let mut extract_logic = quote! {
-            kwargs
-                .and_then(|kwargs| kwargs.get_item(#label).ok())
+        decoders.push(quote! {
+            #property_ident: kwargs
+                .as_ref()
+                .and_then(|kwargs| kwargs.get_item(stringify!(#property_ident)).ok())
                 .flatten()
-                .and_then(|value| value.extract::<#extract_type>().ok())
-        };
+                .and_then(|value| value.extract::<#value_ident>().ok())
+                .unwrap()
+        })
 
-        // If the user has defined **any** input as a Vec, ComfyUI will treat all inputs as lists.
-        // So on the Rust side, when an item is not defined as a list but others are,
-        // the first input is always retrieved from that list instead.
-        if is_list && !field.is_wrapped_by_vector() {
-            extract_logic = quote! {
-                #extract_logic.and_then(|list| list.into_iter().next())
-            }
-        }
+        // let label = named_attributes
+        //     .get("label")
+        //     .map(|label| quote! { #label })
+        //     .unwrap_or_else(|| quote! { stringify!(#property_ident) });
 
-        // If the field is a `String`, strip out empty values so that the
-        // field’s default is used instead of an empty string.
-        // Returning `None` tells the deserializer to fall back to the default.
-        let extract_logic = if field.is_string() {
-            quote! { #extract_logic.and_then(|string| if string.is_empty() { None } else { Some(string) }) }
-        } else {
-            quote! { #extract_logic }
-        };
+        // let bucket = if field.is_required() {
+        //     quote! { required }
+        // } else {
+        //     quote! { optional }
+        // };
 
-        decoders.push(if field.is_required() {
-            quote! { #property_ident: #extract_logic.expect("unable to retrieve attribute."), }
-        } else {
-            quote! { #property_ident: #extract_logic, }
-        });
+        // if field.is_primitive() || field.is_tensor_type() {
+        //     elements.push(quote! {
+        //         let dict = pyo3::types::PyDict::new(py);
+        //         let data_type = comfy_builder_core::node::DataType::from(stringify!(#value_ident)).to_string();
+        //
+        //         #options_default
+        //         #options
+        //
+        //         #bucket.set_item(#label, (data_type, dict))?;
+        //     });
+        // }
+        //
+        // if field.is_enum() {
+        //     elements.push(quote! {
+        //         #bucket.set_item(#label, (#value_ident::variants(),))?;
+        //     });
+        // }
+        //
+        // if let Some(token) = field.get_hidden_tokens() {
+        //     elements.push(quote! {
+        //         hidden.set_item(#label, #token)?;
+        //     })
+        // }
+        //
+        // let extract_type = field.output_ident(is_list);
+        // let mut extract_logic = quote! {
+        //     kwargs
+        //         .and_then(|kwargs| kwargs.get_item(#label).ok())
+        //         .flatten()
+        //         .and_then(|value| value.extract::<#extract_type>().ok())
+        // };
+        //
+        // // If the user has defined **any** input as a Vec, ComfyUI will treat all inputs as lists.
+        // // So on the Rust side, when an item is not defined as a list but others are,
+        // // the first input is always retrieved from that list instead.
+        // if is_list && !field.is_wrapped_by_vector() {
+        //     extract_logic = quote! {
+        //         #extract_logic.and_then(|list| list.into_iter().next())
+        //     }
+        // }
+        //
+        // // If the field is a `String`, strip out empty values so that the
+        // // field’s default is used instead of an empty string.
+        // // Returning `None` tells the deserializer to fall back to the default.
+        // let extract_logic = if field.is_string() {
+        //     quote! { #extract_logic.and_then(|string| if string.is_empty() { None } else { Some(string) }) }
+        // } else {
+        //     quote! { #extract_logic }
+        // };
+        //
+        // decoders.push(if field.is_required() {
+        //     quote! { #property_ident: #extract_logic.expect("unable to retrieve attribute."), }
+        // } else {
+        //     quote! { #property_ident: #extract_logic, }
+        // });
     }
 
     TokenStream::from(quote! {
@@ -139,24 +162,19 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
         //     }
         // }
 
+        impl<'py> comfy_builder_core::prelude::In<'py> for #name {
+            fn blueprints(python: pyo3::Python<'py>) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::types::PyList>> {
+                let io = python.import("comfy_api.latest")?.getattr("io")?;
+                pyo3::types::PyList::new(python,[#(#elements),*])
+            }
+        }
+
         impl<'a> From<comfy_builder_core::prelude::Kwargs<'a>> for #name {
             fn from(kwargs: comfy_builder_core::prelude::Kwargs) -> Self {
                 #name {
-                    number: kwargs
-                        .as_ref()
-                        .and_then(|kwargs| kwargs.get_item("number").ok())
-                        .flatten()
-                        .and_then(|value| value.extract::<usize>().ok())
-                        .unwrap(),
+                    #(#decoders),*
                 }
             }
         }
-
-        impl<'py> comfy_builder_core::prelude::In<'py> for #name {
-            fn blueprints(python: pyo3::Python<'py>) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::types::PyList>> {
-                Ok(pyo3::types::PyList::empty(python))
-            }
-        }
-
     })
 }

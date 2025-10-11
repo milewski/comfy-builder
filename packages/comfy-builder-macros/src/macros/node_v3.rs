@@ -9,86 +9,69 @@ pub fn node(_: TokenStream, input: TokenStream) -> TokenStream {
     TokenStream::from(quote! {
         use pyo3::prelude::*;
         use comfy_builder_core::node::OutputPort;
+        use pyo3::IntoPyObjectExt;
+        use comfy_builder_core::{In, Out};
 
+        #[derive(std::default::Default)]
         #input_struct
 
-        #[pyo3::pymethods]
-        impl #ident {
-            #[new]
-            fn __initialize() -> Self {
-                Self::new()
-            }
-
-            #[classattr]
-            #[pyo3(name = "DESCRIPTION")]
-            fn __description() -> &'static str {
-                Self::DESCRIPTION
-            }
-
-            #[classattr]
-            #[pyo3(name = "DEPRECATED")]
-            fn __deprecated() -> bool {
-                Self::DEPRECATED
-            }
-            
-            #[classattr]
-            #[pyo3(name = "INPUT_IS_LIST")]
-            fn __input_is_list() -> bool {
-                <Self as comfy_builder_core::node::Node>::In::is_input_list()
-            }
-       
-            #[classattr]
-            #[pyo3(name = "OUTPUT_IS_LIST")]
-            fn __output_is_list<'a>(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::types::PyAny>> {
-                <Self as comfy_builder_core::node::Node>::Out::get_output_list().into_pyobject(py)
-            }
-
-            #[classattr]
-            #[pyo3(name = "OUTPUT_TOOLTIPS")]
-            fn __output_tooltips<'a>(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::types::PyAny>> {
-                <Self as comfy_builder_core::node::Node>::Out::tooltips().into_pyobject(py)
-            }
-
-            #[classmethod]
-            #[pyo3(name = "INPUT_TYPES")]
-            fn __input_types<'a>(cls: &pyo3::Bound<'a, pyo3::types::PyType>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::types::PyDict>> {
-                <Self as comfy_builder_core::node::Node>::In::get_inputs(cls.py())
-            }
-
-            #[classattr]
-            #[pyo3(name = "RETURN_TYPES")]
-            fn __return_types<'a>(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::PyAny>> {
-                <Self as comfy_builder_core::node::Node>::Out::values().into_pyobject(py)
-            }
-
-            #[classattr]
-            #[pyo3(name = "RETURN_NAMES")]
-            fn __return_names<'a>(py: pyo3::Python<'a>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::PyAny>> {
-                <Self as comfy_builder_core::node::Node>::Out::labels().into_pyobject(py)
-            }
-
-            #[classattr]
-            #[pyo3(name = "CATEGORY")]
-            fn __category() -> &'static str {
-                Self::CATEGORY
-            }
-
-            #[classattr]
-            #[pyo3(name = "FUNCTION")]
-            fn __function() -> &'static str {
-                "__run"
-            }
-
-            #[classmethod]
-            #[pyo3(signature = (**kwargs))]
-            pub fn __run<'a>(py: &'a pyo3::Bound<pyo3::types::PyType>, kwargs: std::option::Option<&pyo3::Bound<pyo3::types::PyDict>>) -> pyo3::PyResult<impl pyo3::IntoPyObject<'a>> {
-                let instance = Self::new();
-                let output = instance.execute(instance.initialize_input(kwargs)).map_err(|error| {
-                    pyo3::exceptions::PyRuntimeError::new_err(format!("execution failed: {}", error))
-                })?;
-
-                output.into_pyobject(py.py())
-            }
+        inventory::submit! {
+            comfy_builder_core::registry::NodeRegistration::new::<#ident>()
         }
+
+        #[pyo3::pyfunction]
+        #[pyo3(signature = (class, **kwargs))]
+        fn __execute<'a>(
+            class: pyo3::Bound<'a, pyo3::types::PyType>,
+            kwargs: Option<pyo3::Bound<'a, pyo3::types::PyDict>>,
+        ) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::PyAny>> {
+            let instance = #ident::new();
+            let output = instance.execute(instance.initialize_inputs(kwargs.into()));
+
+            let python = class.py();
+            let node_output = python
+                .import("comfy_api.latest")?
+                .getattr("io")?
+                .getattr("NodeOutput")?;
+
+            println!("execute function called... {:?}", class);
+
+            let kwargs = pyo3::types::PyDict::new(python);
+            kwargs.set_item("node_id", "Example")?;
+
+            node_output.call1(output.to_schema(python)?)
+        }
+
+        #[pyfunction]
+        fn __define_schema<'a>(class: pyo3::Bound<'a, pyo3::types::PyType>) -> pyo3::PyResult<pyo3::Bound<'a, pyo3::PyAny>> {
+            let python = class.py();
+            let io = python.import("comfy_api.latest")?.getattr("io")?;
+            let inputs = <#ident as comfy_builder_core::prelude::Node>::In::blueprints(python)?;
+            let outputs = <#ident as comfy_builder_core::prelude::Node>::Out::blueprints(python)?;
+
+            let kwargs = pyo3::types::PyDict::new(python);
+
+            kwargs.set_item("node_id", "Example")?;
+            kwargs.set_item("display_name", "Example Node")?;
+            kwargs.set_item("category", "examples")?;
+            kwargs.set_item("description", "Node description here")?;
+            kwargs.set_item("inputs", inputs)?;
+            kwargs.set_item("outputs", outputs)?;
+
+            io.getattr("Schema")?.call((), Some(&kwargs))
+        }
+
+        impl comfy_builder_core::ExtractNodeFunctions for #ident {
+
+            fn define_function(python: pyo3::Python) -> pyo3::PyResult<pyo3::Bound<pyo3::types::PyCFunction>> {
+                wrap_pyfunction!(__define_schema, python)
+            }
+
+            fn run_function(python: pyo3::Python) -> pyo3::PyResult<pyo3::Bound<pyo3::types::PyCFunction>> {
+                wrap_pyfunction!(__execute, python)
+            }
+
+        }
+
     })
 }

@@ -1,18 +1,19 @@
-use comfy_builder_core::prelude::{Node, NodeInput, NodeOutput};
-use pyo3::prelude::{PyAnyMethods, PyDictMethods};
-use comfy_builder_core::Kwargs;
+use comfy_builder_core::prelude::{Node, NodeInput, NodeOutput, node_v3};
 
-#[derive(Default)]
-pub struct Example;
+#[node_v3]
+struct Example;
 
 #[derive(NodeInput)]
 pub struct Input {
-    number: usize,
+    left: usize,
+    right: usize,
+    string: String,
 }
 
 #[derive(NodeOutput)]
 pub struct Output {
     number: usize,
+    string: String,
 }
 
 impl<'a> Node<'a> for Example {
@@ -21,7 +22,8 @@ impl<'a> Node<'a> for Example {
 
     fn execute(&self, input: Self::In) -> Self::Out {
         Output {
-            number: input.number + 1,
+            number: input.left + input.right,
+            string: input.string,
         }
     }
 }

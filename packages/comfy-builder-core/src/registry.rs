@@ -1,45 +1,21 @@
-use pyo3::prelude::{PyAnyMethods, PyModule};
-use pyo3::types::{PyCFunction, PyDict, PyDictMethods, PyModuleMethods};
-use pyo3::{
-    Bound, FromPyObject, Py, PyAny, PyClass, PyResult, Python, pyfunction, wrap_pyfunction,
-};
-use std::marker::PhantomData;
 use crate::{ExtractNodeFunctions, Node};
+use pyo3::prelude::PyAnyMethods;
+use pyo3::types::{PyCFunction, PyDict, PyDictMethods};
+use pyo3::{Bound, PyAny, PyResult, Python};
 
 pub trait Registerable {}
 
 #[derive(Debug)]
 pub struct NodeRegistration {
-    #[allow(clippy::type_complexity)]
-    inner: fn(
-        python: Python,
-        // module: &Bound<PyModule>,
-        // class: &Bound<PyDict>,
-        // display: &Bound<PyDict>,
-    ) -> PyResult<(Bound<PyCFunction>, Bound<PyCFunction>)>,
+    inner: fn(python: Python) -> PyResult<(Bound<PyCFunction>, Bound<PyCFunction>)>,
 }
 
 impl NodeRegistration {
     pub const fn new<'a, T: ExtractNodeFunctions>() -> Self {
         Self {
-            inner: |python: Python| {
-                let define_schema = T::define_function(python)?;
-                let execute = T::run_function(python)?;
-
-                Ok((define_schema, execute))
-            },
+            inner: |python: Python| Ok((T::define_function(python)?, T::run_function(python)?)),
         }
     }
-
-    // pub fn register(
-    //     &self,
-    //     python: Python,
-    //     module: &Bound<PyModule>,
-    //     class: &Bound<PyDict>,
-    //     display: &Bound<PyDict>,
-    // ) -> PyResult<()> {
-    //     (self.inner)(python, module, class, display)
-    // }
 
     pub fn register_v2<'a>(
         &self,

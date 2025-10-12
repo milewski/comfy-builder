@@ -1,5 +1,5 @@
 use crate::types::IntoDict;
-use pyo3::types::{PyCFunction, PyDict, PyList, PyTuple};
+use pyo3::types::{PyDict, PyList, PyTuple};
 use pyo3::{Bound, IntoPyObject, PyAny, PyResult, Python};
 use std::ops::Deref;
 
@@ -59,26 +59,6 @@ pub trait Out<'py> {
     fn to_schema(self, python: Python) -> PyResult<Bound<PyTuple>>;
 }
 
-pub trait Node<'a>: Default {
-    type In: In<'a>;
-    type Out: Out<'a>;
-
-    fn new() -> Self {
-        Default::default()
-    }
-
-    fn initialize_inputs(&self, kwargs: Kwargs<'a>) -> Self::In {
-        Self::In::from(kwargs)
-    }
-
-    fn execute(&self, input: Self::In) -> Self::Out;
-}
-
-pub trait ExtractNodeFunctions {
-    fn define_function(python: Python) -> PyResult<Bound<PyCFunction>>;
-    fn run_function(python: Python) -> PyResult<Bound<PyCFunction>>;
-}
-
 pub enum ComfyDataTypes {
     Int(&'static str),
     Float(&'static str),
@@ -88,13 +68,6 @@ pub enum ComfyDataTypes {
     Mask,
     Latent,
 }
-
-// fn test() {
-//     Python::attach(|py| {
-//         let kind = ComfyDataTypes::from("usize").to_type();
-//         let kind = kind.into_dict(py).unwrap();
-//     })
-// }
 
 impl ComfyDataTypes {
     pub fn to_comfy(&self) -> String {
@@ -122,12 +95,12 @@ impl ComfyDataTypes {
                 "i64" => types::int::Int::<i64>::into_dict(dict, io),
                 "i128" => types::int::Int::<i128>::into_dict(dict, io),
                 "isize" => types::int::Int::<isize>::into_dict(dict, io),
-                "u8" => types::int::Int::<i8>::into_dict(dict, io),
-                "u16" => types::int::Int::<i16>::into_dict(dict, io),
-                "u32" => types::int::Int::<i32>::into_dict(dict, io),
-                "u64" => types::int::Int::<i64>::into_dict(dict, io),
-                "u128" => types::int::Int::<i128>::into_dict(dict, io),
-                "usize" => types::int::Int::<isize>::into_dict(dict, io),
+                "u8" => types::int::Int::<u8>::into_dict(dict, io),
+                "u16" => types::int::Int::<u16>::into_dict(dict, io),
+                "u32" => types::int::Int::<u32>::into_dict(dict, io),
+                "u64" => types::int::Int::<u64>::into_dict(dict, io),
+                "u128" => types::int::Int::<u128>::into_dict(dict, io),
+                "usize" => types::int::Int::<usize>::into_dict(dict, io),
                 value => unreachable!("invalid int type {}", value),
             },
             ComfyDataTypes::Float(value) => match value {

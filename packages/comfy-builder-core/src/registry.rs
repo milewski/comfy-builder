@@ -1,39 +1,39 @@
-use crate::{ExtractNodeFunctions, Node};
+use crate::node::NodeFunctionProvider;
 use pyo3::prelude::PyAnyMethods;
 use pyo3::types::{PyCFunction, PyDict, PyDictMethods};
 use pyo3::{Bound, PyAny, PyResult, Python};
 
-pub trait Registerable {}
+type FactoryFn = for<'py> fn(
+    python: Python<'py>,
+) -> PyResult<(Bound<'py, PyCFunction>, Bound<'py, PyCFunction>)>;
 
 #[derive(Debug)]
 pub struct NodeRegistration {
-    inner: fn(python: Python) -> PyResult<(Bound<PyCFunction>, Bound<PyCFunction>)>,
+    factory: FactoryFn,
 }
 
 impl NodeRegistration {
-    pub const fn new<'a, T: ExtractNodeFunctions>() -> Self {
+    pub const fn new<T: NodeFunctionProvider>() -> Self {
         Self {
-            inner: |python: Python| Ok((T::define_function(python)?, T::run_function(python)?)),
+            factory: |python| Ok((T::define_fn(python)?, T::execute_fn(python)?)),
         }
     }
 
-    pub fn register_v2<'a>(
+    pub fn create_node<'a, 'py>(
         &self,
-        python: Python<'a>,
-        decorator: &Bound<'a, PyAny>,
-        type_fn: &Bound<'a, PyAny>,
-        comfy_node: &Bound<'a, PyAny>,
-    ) -> PyResult<Bound<'a, PyAny>> {
-        let (define, execute) = (self.inner)(python)?;
-
+        python: Python<'py>,
+        decorator: &'a Bound<'py, PyAny>,
+        type_fn: &'a Bound<'py, PyAny>,
+        comfy_node: &'a Bound<'py, PyAny>,
+        module_name: &'static str,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let (define, execute) = (self.factory)(python)?;
         let methods = PyDict::new(python);
-        let define_schema_function = decorator.call1((define,))?;
-        let execute_function = decorator.call1((execute,))?;
 
-        methods.set_item("define_schema", define_schema_function)?;
-        methods.set_item("execute", execute_function)?;
+        methods.set_item("define_schema", decorator.call1((define,))?)?;
+        methods.set_item("execute", decorator.call1((execute,))?)?;
 
-        type_fn.call1(("RustNode", (comfy_node,), methods))
+        type_fn.call1((format!("{}_node", module_name), (comfy_node,), methods))
     }
 }
 

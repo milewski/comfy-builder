@@ -1,19 +1,17 @@
-use comfy_builder_core::prelude::{Node, NodeInput, NodeOutput, node_v3};
+use comfy_builder_core::prelude::{Image, Node, NodeInput, NodeOutput, node_v3};
 
 #[node_v3]
 struct Example;
 
 #[derive(NodeInput)]
 pub struct Input {
-    left: i8,
-    right: usize,
-    string: String,
+    images: Vec<Image>,
+    string: Option<usize>,
 }
 
 #[derive(NodeOutput)]
 pub struct Output {
-    number: usize,
-    string: String,
+    string: Option<usize>,
 }
 
 impl<'a> Node<'a> for Example {
@@ -21,8 +19,8 @@ impl<'a> Node<'a> for Example {
     type Out = Output;
 
     fn execute(&self, input: Self::In) -> Self::Out {
+        println!("{:?}", input.string);
         Output {
-            number: input.left as usize + input.right,
             string: input.string,
         }
     }

@@ -19,7 +19,7 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
     let mut decoders: Vec<proc_macro2::TokenStream> = vec![];
 
     let fields: Vec<_> = fields.iter().map(FieldExtractor::from).collect();
-    // let is_list = fields.iter().any(|field| field.is_wrapped_by_vector());
+    let is_list = fields.iter().any(|field| field.is_wrapped_by_vector());
 
     for field in fields {
         let property_ident = field.property_ident();
@@ -33,22 +33,30 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
             .map(|label| quote! { #label })
             .unwrap_or_else(|| quote! { stringify!(#property_ident) });
 
-        let extra: Vec<proc_macro2::TokenStream> = named_attributes
+        let attributes: Vec<proc_macro2::TokenStream> = named_attributes
             .into_iter()
-            .map(|(key, value)| quote! { extra.set_item(#key, #value)?; })
+            .map(|(key, value)| {
+                if key == "doc" {
+                    ("tooltip".to_string(), value)
+                } else {
+                    (key, value)
+                }
+            })
+            .map(|(key, value)| quote! { dict.set_item(#key, #value)?; })
             .collect();
 
         let is_optional = field.is_optional();
 
-        if field.is_primitive() {
+        if field.is_primitive() || field.is_tensor_type() {
             elements.push(quote! {
                 {
-                    let extra = pyo3::types::PyDict::new(python);
-                    
-                    #(#extra)*
-                    
+                    let mut dict = pyo3::types::PyDict::new(python);
+
+                    #(#attributes)*
+
                     let kind = comfy_builder_core::ComfyDataTypes::from(stringify!(#value_ident));
-                    let dict = kind.to_type().into_dict(python, &io, extra)?;
+
+                    kind.generate_dict(&mut dict, &io)?;
 
                     dict.set_item("optional", #is_optional)?;
 
@@ -57,14 +65,40 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
             });
         }
 
-        decoders.push(quote! {
-            #property_ident: kwargs
-                .as_ref()
-                .and_then(|kwargs| kwargs.get_item(stringify!(#property_ident)).ok())
-                .flatten()
-                .and_then(|value| value.extract::<#value_ident>().ok())
-                .unwrap()
-        })
+        {
+            let extract_type = field.output_ident(is_list);
+            let mut extract_logic = quote! {
+                kwargs
+                    .as_ref()
+                    .and_then(|kwargs| kwargs.get_item(#display_name).ok())
+                    .flatten()
+                    .and_then(|value| value.extract::<#extract_type>().ok())
+            };
+
+            // If the user has defined **any** input as a Vec, ComfyUI will treat all inputs as lists.
+            // So on the Rust side, when an item is not defined as a list but others are,
+            // the first input is always retrieved from that list instead.
+            if is_list && !field.is_wrapped_by_vector() {
+                extract_logic = quote! {
+                    #extract_logic.and_then(|list| list.map(|list| list.into_iter().next()))
+                }
+            }
+
+            // If the field is a `String`, strip out empty values so that the
+            // field’s default is used instead of an empty string.
+            // Returning `None` tells the deserializer to fall back to the default.
+            let extract_logic = if field.is_string() {
+                quote! { #extract_logic.and_then(|string| string.map(|string| if string.is_empty() { None } else { Some(string) })) }
+            } else {
+                quote! { #extract_logic }
+            };
+
+            decoders.push(if field.is_required() {
+                quote! { #property_ident: #extract_logic.expect("unable to retrieve attribute.") }
+            } else {
+                quote! { #property_ident: #extract_logic.flatten() }
+            });
+        }
 
         // let label = named_attributes
         //     .get("label")
@@ -178,10 +212,15 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
             fn blueprints(python: pyo3::Python<'py>, io: &pyo3::Bound<'py, pyo3::PyAny>) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::types::PyList>> {
                 pyo3::types::PyList::new(python,[#(#elements),*])
             }
+
+            fn is_list() -> bool {
+                #is_list
+            }
         }
 
         impl<'py> From<comfy_builder_core::prelude::Kwargs<'py>> for #name {
             fn from(kwargs: comfy_builder_core::prelude::Kwargs) -> Self {
+                println!("received: {:?}", kwargs.as_ref());
                 #name {
                     #(#decoders),*
                 }

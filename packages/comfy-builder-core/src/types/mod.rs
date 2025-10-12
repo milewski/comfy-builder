@@ -1,17 +1,16 @@
-use pyo3::types::{IntoPyDict, PyDict};
-use pyo3::{Bound, PyAny, PyResult, Python};
-use std::collections::HashMap;
-
+use pyo3::types::PyDict;
+use pyo3::{Bound, PyAny, PyResult};
+pub mod boolean;
+pub mod image;
 pub mod int;
+pub mod latent;
+pub mod mask;
 pub mod string;
 
-pub trait ComfyNativeType<'py>: IntoDict<'py> + Default {}
+pub trait ComfyNativeType<'py>: IntoDict<'py> {}
 
 pub trait IntoDict<'py> {
-    fn into_dict(
-        self: Box<Self>,
-        python: Python<'py>,
-        io: &Bound<'py, PyAny>,
-        extra: Bound<'py, PyDict>,
-    ) -> PyResult<Bound<'py, PyDict>>;
+    fn into_dict(dict: &mut Bound<'py, PyDict>, io: &Bound<'py, PyAny>) -> PyResult<()> {
+        Ok(())
+    }
 }

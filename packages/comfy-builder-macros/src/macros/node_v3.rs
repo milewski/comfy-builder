@@ -47,6 +47,7 @@ pub fn node(_: TokenStream, input: TokenStream) -> TokenStream {
             let python = class.py();
             let io = python.import("comfy_api.latest")?.getattr("io")?;
             let inputs = <#ident as comfy_builder_core::prelude::Node>::In::blueprints(python, &io)?;
+            let is_list = <#ident as comfy_builder_core::prelude::Node>::In::is_list();
             let outputs = <#ident as comfy_builder_core::prelude::Node>::Out::blueprints(python, &io)?;
 
             let kwargs = pyo3::types::PyDict::new(python);
@@ -55,6 +56,7 @@ pub fn node(_: TokenStream, input: TokenStream) -> TokenStream {
             kwargs.set_item("display_name", "Example Node")?;
             kwargs.set_item("category", "examples")?;
             kwargs.set_item("description", "Node description here")?;
+            kwargs.set_item("is_input_list", is_list)?;
             kwargs.set_item("inputs", inputs)?;
             kwargs.set_item("outputs", outputs)?;
 

@@ -24,6 +24,19 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
             let value_ident = field.value_ident();
             let property_ident = field.property_ident();
             let named_attributes = field.named_attributes();
+            let is_list = field.is_wrapped_by_vector();
+
+            let attributes: Vec<proc_macro2::TokenStream> = named_attributes
+                .into_iter()
+                .map(|(key, value)| {
+                    if key == "doc" {
+                        ("tooltip".to_string(), value)
+                    } else {
+                        (key, value)
+                    }
+                })
+                .map(|(key, value)| quote! { dict.set_item(#key, #value)?; })
+                .collect();
 
             field_inserts.push(quote! {
                 self.#property_ident.into_py_any(python)?
@@ -31,8 +44,14 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
 
             inserts.push(quote! {
                 {
-                    let kind = comfy_builder_core::ComfyDataTypes::from(stringify!(#value_ident)).to_comfy();
-                    io.getattr(kind)?.getattr("Output")?.call0()?
+                    let kind = comfy_builder_core::ComfyDataTypes::from(stringify!(#value_ident));
+                    let dict = pyo3::types::PyDict::new(python);
+                    dict.set_item("is_output_list", #is_list)?;
+                    dict.set_item("display_name", stringify!(#property_ident))?;
+
+                    #(#attributes)*
+
+                    io.getattr(kind.to_comfy())?.getattr("Output")?.call((), Some(&dict))?
                 }
             });
         }

@@ -48,25 +48,57 @@ pub fn enum_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(quote! {
 
         use pyo3::prelude::*;
+        use pyo3::exceptions::*;
 
-        impl comfy_builder_core::EnumVariants for #name {
-            fn variants() -> Vec<&'static str> {
-                vec![#(#variant_names),*]
+        inventory::submit! {
+            comfy_builder_core::registry::EnumRegistration { name: stringify!(#name) }
+        }
+
+        impl TryFrom<&str> for #name {
+            type Error = pyo3::PyErr;
+
+            fn try_from(value: &str) -> Result<Self, Self::Error> {
+                match value {
+                    #(#variant_names => Ok(#variant_matches),)*
+                    _ => Err(pyo3::exceptions::PyValueError::new_err(format!("invalid variant name: {}", value))),
+                }
             }
         }
 
-        impl From<String> for #name {
-            fn from(value: String) -> Self {
-                match value.as_str() {
-                    #(#variant_names => #variant_matches,)*
-                    _ => panic!("Invalid variant name: {}", value),
-                }
+        impl std::fmt::Display for #name {
+            fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(formatter, "{}", match self {
+                    #(#variant_matches => #variant_names,)*
+                })
+            }
+        }
+
+        impl<'py> pyo3::IntoPyObject<'py> for #name {
+            type Target = pyo3::PyAny;
+            type Output = pyo3::Bound<'py, Self::Target>;
+            type Error = pyo3::PyErr;
+
+            fn into_pyobject(self, python: pyo3::Python<'py>) -> Result<Self::Output, Self::Error> {
+                self.to_string().into_bound_py_any(python)
             }
         }
 
         impl<'py> pyo3::FromPyObject<'py> for #name {
             fn extract_bound(object: &pyo3::Bound<'py, pyo3::PyAny>) -> pyo3::PyResult<Self> {
-                Ok(Self::from(object.extract::<String>()?))
+                Ok(Self::try_from(object.extract::<&str>()?)?)
+            }
+        }
+
+        impl comfy_builder_core::ToComfyType for #name {
+            fn comfy_type() -> comfy_builder_core::ComfyDataTypes {
+                comfy_builder_core::ComfyDataTypes::Enum
+            }
+        }
+
+        impl<'py> comfy_builder_core::IntoDict<'py> for #name {
+             fn into_dict(dict: &mut Bound<'py, PyDict>, io: &Bound<'py, PyAny>) -> PyResult<()> {
+                dict.set_item("options", vec![#(#variant_names),*])?;
+                Ok(())
             }
         }
 

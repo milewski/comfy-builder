@@ -12,6 +12,11 @@ pub struct NodeRegistration {
     factory: FactoryFn,
 }
 
+#[derive(Debug)]
+pub struct EnumRegistration {
+    pub name: &'static str,
+}
+
 impl NodeRegistration {
     pub const fn new<T: NodeFunctionProvider>() -> Self {
         Self {
@@ -38,3 +43,4 @@ impl NodeRegistration {
 }
 
 inventory::collect!(NodeRegistration);
+inventory::collect!(EnumRegistration);

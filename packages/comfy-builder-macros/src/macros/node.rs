@@ -95,7 +95,7 @@ pub fn node(attr: TokenStream, input: TokenStream) -> TokenStream {
             kwargs: Option<pyo3::Bound<'py, pyo3::types::PyDict>>,
         ) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::PyAny>> {
             let instance = #ident::new();
-            let input = instance.initialize_inputs(kwargs.into());
+            let input = instance.initialize_inputs(kwargs.into())?;
             let output = instance.execute(input).map_err(|error| {
                 PyErr::new::<pyo3::exceptions::PyTypeError, _>(format!(
                     "Failed to execute node.\n\n{}", error

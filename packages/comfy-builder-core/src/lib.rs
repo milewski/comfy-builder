@@ -1,6 +1,7 @@
-use crate::types::IntoDict;
+use crate::registry::{EnumRegistration, NodeRegistration};
+pub use crate::types::IntoDict;
 use pyo3::types::{PyDict, PyList, PyTuple};
-use pyo3::{Bound, IntoPyObject, PyAny, PyResult, Python};
+use pyo3::{Bound, IntoPyObject, PyAny, PyErr, PyResult, Python};
 use std::ops::Deref;
 
 pub mod attributes;
@@ -27,19 +28,23 @@ impl<'a> Deref for Kwargs<'a> {
     }
 }
 
-impl<'a> From<Kwargs<'a>> for () {
-    fn from(_: Kwargs<'a>) -> Self {}
-}
-
-impl<'py> In<'py> for () {
-    fn blueprints(python: Python<'py>, _: &Bound<PyAny>) -> PyResult<Bound<'py, PyList>> {
-        Ok(PyList::empty(python))
-    }
-
-    fn is_list() -> bool {
-        false
-    }
-}
+// impl<'a> TryFrom<Kwargs<'a>> for () {
+//     type Error = PyErr;
+//
+//     fn try_from(value: Kwargs<'a>) -> Result<Self, Self::Error> {
+//        Ok(())
+//     }
+// }
+//
+// impl<'py> In<'py> for () {
+//     fn blueprints(python: Python<'py>, _: &Bound<PyAny>) -> PyResult<Bound<'py, PyList>> {
+//         Ok(PyList::empty(python))
+//     }
+//
+//     fn is_list() -> bool {
+//         false
+//     }
+// }
 
 impl<'py> Out<'py> for () {
     fn blueprints(python: Python<'py>, _: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyList>> {
@@ -51,7 +56,7 @@ impl<'py> Out<'py> for () {
     }
 }
 
-pub trait In<'py>: From<Kwargs<'py>> {
+pub trait In<'py>: TryFrom<Kwargs<'py>> {
     fn blueprints(python: Python<'py>, io: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyList>>;
     fn is_list() -> bool;
 }
@@ -95,6 +100,15 @@ impl ComfyDataTypes {
 
 impl From<&'static str> for ComfyDataTypes {
     fn from(value: &'static str) -> Self {
+        let enums = inventory::iter::<EnumRegistration>
+            .into_iter()
+            .map(|registration| registration.name)
+            .collect::<Vec<_>>();
+
+        if enums.contains(&value) {
+            return ComfyDataTypes::Enum;
+        }
+
         match value {
             "i8" | "i16" | "i32" | "i64" | "i128" | "isize" => ComfyDataTypes::Int(value),
             "u8" | "u16" | "u32" | "u64" | "u128" | "usize" => ComfyDataTypes::Int(value),

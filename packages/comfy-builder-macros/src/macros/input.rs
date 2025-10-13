@@ -100,7 +100,7 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
             };
 
             decoders.push(if field.is_required() {
-                quote! { #property_ident: #extract_logic.expect("unable to retrieve attribute.") }
+                quote! { #property_ident: #extract_logic.ok_or_else(|| pyo3::exceptions::PyValueError::new_err("unable to retrieve attribute"))? }
             } else {
                 quote! { #property_ident: #extract_logic.flatten() }
             });
@@ -227,11 +227,13 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
             }
         }
 
-        impl<'py> From<comfy_builder_core::prelude::Kwargs<'py>> for #name {
-            fn from(kwargs: comfy_builder_core::prelude::Kwargs) -> Self {
-                #name {
+        impl<'py> TryFrom<comfy_builder_core::prelude::Kwargs<'py>> for #name {
+            type Error = pyo3::PyErr;
+
+            fn try_from(kwargs: comfy_builder_core::prelude::Kwargs) -> Result<Self, Self::Error> {
+                Ok(#name {
                     #(#decoders),*
-                }
+                })
             }
         }
     })

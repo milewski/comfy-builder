@@ -1,7 +1,7 @@
-use crate::registry::{EnumRegistration, NodeRegistration};
+use crate::registry::EnumRegistration;
 pub use crate::types::IntoDict;
 use pyo3::types::{PyDict, PyList, PyTuple};
-use pyo3::{Bound, IntoPyObject, PyAny, PyErr, PyResult, Python};
+use pyo3::{Bound, IntoPyObject, PyAny, PyResult, Python};
 use std::ops::Deref;
 
 pub mod attributes;
@@ -10,7 +10,7 @@ pub mod prelude;
 pub mod registry;
 pub mod types;
 
-pub trait ComfyInput<'py>: ToComfyType + IntoDict<'py> {}
+pub trait ComfyInput<'py>: ToComfyType<'py> + IntoDict<'py> {}
 
 pub struct Kwargs<'py>(pub Option<Bound<'py, PyDict>>);
 
@@ -66,7 +66,7 @@ pub trait Out<'py> {
     fn to_schema(self, python: Python) -> PyResult<Bound<PyTuple>>;
 }
 
-pub trait ToComfyType {
+pub trait ToComfyType<'py>: IntoDict<'py> {
     fn comfy_type() -> ComfyDataTypes;
 }
 
@@ -132,8 +132,4 @@ macro_rules! set_defaults {
             }
         )*
     };
-}
-
-pub trait EnumVariants: From<String> {
-    fn variants() -> Vec<&'static str>;
 }

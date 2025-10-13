@@ -24,8 +24,6 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
     for field in fields {
         let property_ident = field.property_ident();
         let value_ident = field.value_ident();
-        let options_default = field.options_default();
-        let options = field.options();
         let mut named_attributes = field.named_attributes();
         let is_optional = field.is_optional();
 

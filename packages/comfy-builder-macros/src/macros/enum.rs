@@ -89,14 +89,14 @@ pub fn enum_derive(input: TokenStream) -> TokenStream {
             }
         }
 
-        impl comfy_builder_core::ToComfyType for #name {
+        impl<'py> comfy_builder_core::ToComfyType<'py> for #name {
             fn comfy_type() -> comfy_builder_core::ComfyDataTypes {
                 comfy_builder_core::ComfyDataTypes::Enum
             }
         }
 
         impl<'py> comfy_builder_core::IntoDict<'py> for #name {
-             fn into_dict(dict: &mut Bound<'py, PyDict>, io: &Bound<'py, PyAny>) -> PyResult<()> {
+             fn into_dict(dict: &mut pyo3::Bound<'py, pyo3::types::PyDict>, io: &pyo3::Bound<'py, pyo3::PyAny>) -> pyo3::PyResult<()> {
                 dict.set_item("options", vec![#(#variant_names),*])?;
                 Ok(())
             }

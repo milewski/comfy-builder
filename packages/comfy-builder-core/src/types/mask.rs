@@ -1,21 +1,23 @@
 use crate::types::image::Image;
-use crate::types::{ComfyNativeType, IntoDict};
+use crate::types::{IntoDict};
+use crate::{ComfyDataTypes, ToComfyType};
 use candle_core::shape::ShapeWithOneHole;
 use candle_core::{Device, Tensor as CandleTensor, WithDType};
 use numpy::Element;
 use pyo3::prelude::PyAnyMethods;
 use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyErr, PyResult, Python};
 use std::ops::Deref;
-use crate::ComfyDataTypes;
 
 #[derive(Clone, Debug)]
-pub struct Mask<T: Element + WithDType = f32>(Image<T>);
+pub struct Mask<T = f32>(Image<T>);
 
-impl<'py, T: Element + WithDType> ComfyNativeType<'py> for Mask<T> {}
-
-impl<'py, T: Element + WithDType> IntoDict<'py> for Mask<T> {
- 
+impl<'py> ToComfyType<'py> for Mask<f32> {
+    fn comfy_type() -> ComfyDataTypes {
+        ComfyDataTypes::Mask
+    }
 }
+
+impl<'py> IntoDict<'py> for Mask<f32> {}
 
 impl<T: Element + WithDType> Deref for Mask<T> {
     type Target = CandleTensor;

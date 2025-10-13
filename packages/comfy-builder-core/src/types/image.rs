@@ -1,4 +1,4 @@
-use crate::types::{ComfyNativeType, IntoDict};
+use crate::types::{IntoDict};
 use crate::{ComfyDataTypes, ToComfyType};
 use candle_core::shape::ShapeWithOneHole;
 use candle_core::{Device, Tensor as CandleTensor, WithDType};
@@ -15,11 +15,9 @@ pub struct Image<T = f32> {
     marker: PhantomData<T>,
 }
 
-impl<'py> ComfyNativeType<'py> for Image<f32> {}
-
 impl<'py> IntoDict<'py> for Image<f32> {}
 
-impl ToComfyType for Image<f32> {
+impl<'py> ToComfyType<'py> for Image<f32> {
     fn comfy_type() -> ComfyDataTypes {
         ComfyDataTypes::Image
     }
@@ -76,21 +74,21 @@ impl<'py, T: Element + WithDType> IntoPyObject<'py> for Image<T> {
     type Output = Bound<'py, Self::Target>;
     type Error = PyErr;
 
-    fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
+    fn into_pyobject(self, python: Python<'py>) -> Result<Self::Output, Self::Error> {
         let tensor = self.into_tensor();
         let shape = tensor.dims();
 
         let data: Vec<T> = tensor
             .flatten_all()
-            .map_err(|e| PyErr::new::<PyRuntimeError, _>(e.to_string()))?
+            .map_err(|error| PyErr::new::<PyRuntimeError, _>(error.to_string()))?
             .to_vec1::<_>()
-            .map_err(|e| PyErr::new::<PyRuntimeError, _>(e.to_string()))?;
+            .map_err(|error| PyErr::new::<PyRuntimeError, _>(error.to_string()))?;
 
-        let array = PyArray::from_iter(py, data)
+        let array = PyArray::from_iter(python, data)
             .reshape(shape)
-            .map_err(|e| PyErr::new::<PyRuntimeError, _>(e.to_string()))?;
+            .map_err(|error| PyErr::new::<PyRuntimeError, _>(error.to_string()))?;
 
-        let torch = py.import("torch")?;
+        let torch = python.import("torch")?;
         let tensor = torch.getattr("tensor")?.call1((array,))?;
 
         Ok(tensor)

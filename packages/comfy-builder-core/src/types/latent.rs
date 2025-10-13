@@ -1,23 +1,25 @@
 use crate::types::image::Image;
-use crate::types::{ComfyNativeType, IntoDict};
+use crate::types::{IntoDict};
+use crate::{ComfyDataTypes, ToComfyType};
 use candle_core::{Device, WithDType};
 use numpy::Element;
 use pyo3::prelude::PyAnyMethods;
 use pyo3::types::PyDict;
 use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyErr, PyResult, Python};
-use crate::ComfyDataTypes;
 
 #[derive(Clone, Debug)]
-pub struct Latent<T: Element + WithDType = f32> {
+pub struct Latent<T = f32> {
     samples: Image<T>,
     noise_mask: Option<Image<T>>,
 }
 
-impl<'py, T: Element + WithDType> ComfyNativeType<'py> for Latent<T> {}
-
-impl<'py, T: Element + WithDType> IntoDict<'py> for Latent<T> {
-
+impl<'py> ToComfyType<'py> for Latent<f32> {
+    fn comfy_type() -> ComfyDataTypes {
+        ComfyDataTypes::Latent
+    }
 }
+
+impl<'py> IntoDict<'py> for Latent<f32> {}
 
 impl<T: Element + WithDType> Latent<T> {
     pub fn new(any: Bound<PyAny>) -> PyResult<Self> {

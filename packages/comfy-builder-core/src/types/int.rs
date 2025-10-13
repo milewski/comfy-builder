@@ -1,16 +1,13 @@
 use crate::types::IntoDict;
 use crate::{ComfyDataTypes, set_defaults, ToComfyType};
-use num_traits::{Bounded, ConstZero, Num};
-use pyo3::conversion::FromPyObjectBound;
+use num_traits::ConstZero;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::{PyAnyMethods, PyDictMethods};
 use pyo3::types::PyDict;
-use pyo3::{Bound, IntoPyObject, PyAny, PyResult};
+use pyo3::{Bound, PyAny, PyResult};
 use std::any::type_name;
 
 impl<'py> IntoDict<'py> for usize
-// where
-//     T: Num + Bounded + PartialOrd + IntoPyObject<'py> + for<'a> FromPyObjectBound<'a, 'py>,
 {
     fn into_dict(dict: &mut Bound<'py, PyDict>, io: &Bound<'py, PyAny>) -> PyResult<()> {
         set_defaults!(dict,
@@ -61,7 +58,7 @@ impl<'py> IntoDict<'py> for usize
     }
 }
 
-impl ToComfyType for usize {
+impl<'py> ToComfyType<'py> for usize {
     fn comfy_type() -> ComfyDataTypes {
         ComfyDataTypes::Int(type_name::<Self>())
     }

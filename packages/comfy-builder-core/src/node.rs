@@ -1,5 +1,5 @@
 use std::error::Error;
-use pyo3::{Bound, PyErr, PyResult, Python};
+use pyo3::{Bound, PyResult, Python};
 use pyo3::types::PyCFunction;
 use crate::{In, Kwargs, Out};
 

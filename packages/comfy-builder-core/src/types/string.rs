@@ -1,7 +1,7 @@
 use crate::types::IntoDict;
-use crate::{ComfyDataTypes, ComfyInput, ToComfyType};
+use crate::{ComfyDataTypes, ToComfyType};
 
-impl ToComfyType for String {
+impl<'py> ToComfyType<'py> for String {
     fn comfy_type() -> ComfyDataTypes {
         ComfyDataTypes::String
     }

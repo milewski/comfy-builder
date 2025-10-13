@@ -53,7 +53,7 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
 
                     #(#attributes)*
 
-                    let kind = comfy_builder_core::ComfyDataTypes::from(stringify!(#value_ident));
+                    let kind = comfy_builder_core::ComfyDataTypes::try_from(stringify!(#value_ident))?;
                     let comfy_type = #value_ident::comfy_type();
 
                     #value_ident::into_dict(&mut dict, &io)?;

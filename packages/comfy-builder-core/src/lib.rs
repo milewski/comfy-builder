@@ -1,7 +1,8 @@
 use crate::registry::EnumRegistration;
 pub use crate::types::IntoDict;
+use pyo3::exceptions::PyValueError;
 use pyo3::types::{PyDict, PyList, PyTuple};
-use pyo3::{Bound, IntoPyObject, PyAny, PyResult, Python};
+use pyo3::{Bound, IntoPyObject, PyAny, PyErr, PyResult, Python};
 use std::ops::Deref;
 
 pub mod attributes;
@@ -98,18 +99,20 @@ impl ComfyDataTypes {
     }
 }
 
-impl From<&'static str> for ComfyDataTypes {
-    fn from(value: &'static str) -> Self {
+impl TryFrom<&'static str> for ComfyDataTypes {
+    type Error = PyErr;
+
+    fn try_from(value: &'static str) -> Result<Self, Self::Error> {
         let enums = inventory::iter::<EnumRegistration>
             .into_iter()
             .map(|registration| registration.name)
             .collect::<Vec<_>>();
 
         if enums.contains(&value) {
-            return ComfyDataTypes::Enum;
+            return Ok(ComfyDataTypes::Enum);
         }
 
-        match value {
+        let value = match value {
             "i8" | "i16" | "i32" | "i64" | "i128" | "isize" => ComfyDataTypes::Int(value),
             "u8" | "u16" | "u32" | "u64" | "u128" | "usize" => ComfyDataTypes::Int(value),
             "f32" | "f64" => ComfyDataTypes::Float(value),
@@ -118,8 +121,13 @@ impl From<&'static str> for ComfyDataTypes {
             "Image" => ComfyDataTypes::Image,
             "Mask" => ComfyDataTypes::Mask,
             "Latent" => ComfyDataTypes::Latent,
-            kind => panic!("Unknown data type {:?}", kind),
-        }
+            kind => Err(PyValueError::new_err(format!(
+                "Unknown data type {:?}",
+                kind
+            )))?,
+        };
+
+        Ok(value)
     }
 }
 

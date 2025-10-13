@@ -5,6 +5,7 @@ use numpy::Element;
 use pyo3::prelude::PyAnyMethods;
 use pyo3::types::PyDict;
 use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyErr, PyResult, Python};
+use crate::ComfyDataTypes;
 
 #[derive(Clone, Debug)]
 pub struct Latent<T: Element + WithDType = f32> {
@@ -14,7 +15,11 @@ pub struct Latent<T: Element + WithDType = f32> {
 
 impl<'py, T: Element + WithDType> ComfyNativeType<'py> for Latent<T> {}
 
-impl<'py, T: Element + WithDType> IntoDict<'py> for Latent<T> {}
+impl<'py, T: Element + WithDType> IntoDict<'py> for Latent<T> {
+    fn to_native_type() -> ComfyDataTypes {
+        ComfyDataTypes::Latent
+    }
+}
 
 impl<T: Element + WithDType> Latent<T> {
     pub fn new(any: Bound<PyAny>) -> PyResult<Self> {

@@ -9,7 +9,7 @@ pub trait Options: Parse {
     fn generate_token_stream(&self) -> TokenStream;
 }
 
-#[derive(Default, Debug)]
+#[derive(Default)]
 pub struct AnyOption {
     options: HashMap<String, Expr>,
 }

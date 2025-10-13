@@ -80,7 +80,7 @@ impl<'a> FieldExtractor<'a> {
     pub fn is_numeric(&self) -> bool {
         let kind_str = self.value_ident().to_string();
 
-        matches!(kind_str.as_str(),numeric_types!())
+        matches!(kind_str.as_str(), numeric_types!())
     }
 
     pub fn is_tensor_type(&self) -> bool {
@@ -90,6 +90,12 @@ impl<'a> FieldExtractor<'a> {
             kind_str.as_str(),
             numeric_types!() | "Image" | "Mask" | "Latent"
         )
+    }
+
+    pub fn is_custom_type(&self) -> bool {
+        let kind_str = self.value_ident().to_string();
+
+        matches!(kind_str.as_str(), numeric_types!() | "ImageUpload")
     }
 
     pub fn is_primitive(&self) -> bool {

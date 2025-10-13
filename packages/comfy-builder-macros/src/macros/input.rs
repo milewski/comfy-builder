@@ -27,6 +27,7 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
         let options_default = field.options_default();
         let options = field.options();
         let mut named_attributes = field.named_attributes();
+        let is_optional = field.is_optional();
 
         let display_name = named_attributes
             .remove("display_name")
@@ -45,9 +46,26 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
             .map(|(key, value)| quote! { dict.set_item(#key, #value)?; })
             .collect();
 
-        let is_optional = field.is_optional();
+        {
+            // let (kind, body) = if field.is_enum() {
+            //     (
+            //         quote! { comfy_builder_core::ComfyDataTypes::Enum },
+            //         quote! { comfy_builder_core::types::r#enum::Enum::<#value_ident>::into_dict(&mut dict, &io) },
+            //     )
+            // } else if field.is_primitive() || field.is_tensor_type() {
+            //     (
+            //         quote! { comfy_builder_core::ComfyDataTypes::from(stringify!(#value_ident)) },
+            //         quote! { kind.generate_dict(&mut dict, &io)? },
+            //     )
+            // } else if field.is_custom_type() {
+            //     (
+            //         quote! { comfy_builder_core::ComfyDataTypes::Enum },
+            //         quote! { comfy_builder_core::types::image_upload::ImageUpload::into_dict(&mut dict, &io) },
+            //     )
+            // } else {
+            //     unreachable!("Unsupported field type");
+            // };
 
-        if field.is_primitive() || field.is_tensor_type() {
             elements.push(quote! {
                 {
                     let mut dict = pyo3::types::PyDict::new(python);
@@ -55,12 +73,15 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
                     #(#attributes)*
 
                     let kind = comfy_builder_core::ComfyDataTypes::from(stringify!(#value_ident));
+                    let comfy_type = #value_ident::comfy_type();
 
-                    kind.generate_dict(&mut dict, &io)?;
+                    // #value_ident::into_dict(&mut dict, &io)?;
+
+                    // #body;
 
                     dict.set_item("optional", #is_optional)?;
 
-                    io.getattr(kind.to_comfy())?.getattr("Input")?.call((#display_name,), Some(&dict))?
+                    io.getattr(comfy_type.to_comfy())?.getattr("Input")?.call((#display_name,), Some(&dict))?
                 }
             });
         }
@@ -169,6 +190,9 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
     }
 
     TokenStream::from(quote! {
+
+        // use comfy_builder_core::types::*;
+        use comfy_builder_core::ToComfyType;
 
         // use comfy_builder_core::node::EnumVariants;
         // use comfy_builder_core::node::InputPort;

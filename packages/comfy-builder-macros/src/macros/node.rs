@@ -4,7 +4,7 @@ use quote::{ToTokens, quote};
 use std::collections::HashMap;
 use std::ops::Deref;
 use syn::parse::{Parse, ParseStream};
-use syn::{DeriveInput, Expr, ExprLit, Lit, Meta, Token, parse, parse_macro_input};
+use syn::{DeriveInput, Expr, Token, parse, parse_macro_input};
 
 #[derive(Debug)]
 struct Arguments {

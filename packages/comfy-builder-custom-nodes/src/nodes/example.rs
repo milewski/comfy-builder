@@ -1,4 +1,3 @@
-use comfy_builder_core::EnumVariants;
 use comfy_builder_core::node::Node;
 use comfy_builder_core::prelude::{Enum, Image, NodeInput, NodeOutput, node};
 use std::error::Error;
@@ -14,44 +13,43 @@ enum Demo {
 pub struct Input {
     string: String,
     string_option: Option<String>,
-    usize: usize,
-    usize_option: Option<usize>,
-    boolean: bool,
+    // usize: usize,
+    // usize_option: Option<usize>,
+    // boolean: bool,
+    // image: Image,
+    images: Vec<Image>,
 }
 
-// impl<'py> From<comfy_builder_core::prelude::Kwargs<'py>> for Input {
+// impl<'a> From<comfy_builder_core::prelude::Kwargs<'a>> for Input {
+//     // string: String,
+//     // string_option: Option<String>,
+//     // usize: usize,
+//     // usize_option: Option<usize>,
 //     fn from(kwargs: comfy_builder_core::prelude::Kwargs) -> Self {
+//         println!("ARGS {:?}", kwargs.as_ref());
 //         Input {
-//             string: kwargs
-//                 .as_ref()
-//                 .and_then(|kwargs| kwargs.get_item("string").ok())
-//                 .flatten()
-//                 .and_then(|value| value.extract::<String>().ok())
-//                 .and_then(|string| {
-//                     string
-//                         .map(|string| {
-//                             if string.is_empty() { None } else { Some(string) }
-//                         })
-//                 })
-//                 .expect("unable to retrieve attribute."),
 //             string_option: kwargs
 //                 .as_ref()
 //                 .and_then(|kwargs| kwargs.get_item("string_option").ok())
 //                 .flatten()
-//                 .and_then(|value| value.extract::<Option<String>>().ok())
+//                 .and_then(|value| value.extract::<Option<Vec<String>>>().ok())
+//                 .and_then(|list| list.map(|list| list.into_iter().next()))
 //                 .and_then(|string| {
+//                     println!("GOOOOOOT {:?}", string);
 //                     string
 //                         .map(|string| {
 //                             if string.is_empty() { None } else { Some(string) }
 //                         })
 //                 })
 //                 .flatten(),
-//             usize: kwargs
+//
+//             images: kwargs
 //                 .as_ref()
-//                 .and_then(|kwargs| kwargs.get_item("usize").ok())
+//                 .and_then(|kwargs| kwargs.get_item("images").ok())
 //                 .flatten()
-//                 .and_then(|value| value.extract::<usize>().ok())
+//                 .and_then(|value| value.extract::<Vec<Image>>().ok())
 //                 .expect("unable to retrieve attribute."),
+//
 //         }
 //     }
 // }
@@ -60,9 +58,11 @@ pub struct Input {
 pub struct Output {
     string: String,
     string_option: Option<String>,
-    usize: usize,
-    usize_option: Option<usize>,
-    boolean: bool,
+    // usize: usize,
+    // usize_option: Option<usize>,
+    // boolean: bool,
+    // image: Image,
+    images: Vec<Image>,
 }
 
 #[node]
@@ -76,10 +76,12 @@ impl<'a> Node<'a> for Example {
     fn execute(&self, input: Self::In) -> Result<Self::Out, Self::Error> {
         Ok(Output {
             string: input.string,
-            usize: input.usize,
-            usize_option: input.usize_option,
+            // usize: input.usize,
+            // usize_option: input.usize_option,
             string_option: input.string_option,
-            boolean: input.boolean,
+            // boolean: input.boolean,
+            // image: input.image,
+            images: input.images,
         })
     }
 }

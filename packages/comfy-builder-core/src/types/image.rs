@@ -1,4 +1,5 @@
 use crate::types::{ComfyNativeType, IntoDict};
+use crate::{ComfyDataTypes, ToComfyType};
 use candle_core::shape::ShapeWithOneHole;
 use candle_core::{Device, Tensor as CandleTensor, WithDType};
 use numpy::{Element, PyArray, PyArrayDyn, PyArrayMethods, PyUntypedArrayMethods};
@@ -7,18 +8,21 @@ use pyo3::prelude::PyAnyMethods;
 use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyErr, PyResult, Python};
 use std::marker::PhantomData;
 use std::ops::Deref;
-use crate::ComfyDataTypes;
 
 #[derive(Clone, Debug)]
-pub struct Image<T: Element + WithDType = f32> {
+pub struct Image<T = f32> {
     tensor: CandleTensor,
     marker: PhantomData<T>,
 }
 
-impl<'py, T: Element + WithDType> ComfyNativeType<'py> for Image<T> {}
+impl<'py> ComfyNativeType<'py> for Image<f32> {}
 
-impl<'py, T: Element + WithDType> IntoDict<'py> for Image<T> {
+impl<'py> IntoDict<'py> for Image<f32> {}
 
+impl ToComfyType for Image<f32> {
+    fn comfy_type() -> ComfyDataTypes {
+        ComfyDataTypes::Image
+    }
 }
 
 impl<T: Element + WithDType> Image<T> {

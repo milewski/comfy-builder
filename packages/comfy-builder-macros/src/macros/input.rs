@@ -81,15 +81,19 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
             // So on the Rust side, when an item is not defined as a list but others are,
             // the first input is always retrieved from that list instead.
             if is_list && !field.is_wrapped_by_vector() {
-                extract_logic = quote! {
-                    #extract_logic.and_then(|list| list.map(|list| list.into_iter().next()))
-                }
+
+                extract_logic = if is_optional {
+                    quote! { #extract_logic.and_then(|list| list.map(|list| list.into_iter().next())) }
+                } else {
+                    quote! { #extract_logic.and_then(|list| list.into_iter().next()) }
+                };
+
             }
 
             // If the field is a `String`, strip out empty values so that the
             // field’s default is used instead of an empty string.
             // Returning `None` tells the deserializer to fall back to the default.
-            let extract_logic = if field.is_string() && field.is_optional() {
+            let extract_logic = if field.is_string() && is_optional {
                 quote! { #extract_logic.and_then(|string| string.map(|string| if string.is_empty() { None } else { Some(string) })) }
             } else {
                 quote! { #extract_logic }

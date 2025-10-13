@@ -16,9 +16,7 @@ pub struct Latent<T: Element + WithDType = f32> {
 impl<'py, T: Element + WithDType> ComfyNativeType<'py> for Latent<T> {}
 
 impl<'py, T: Element + WithDType> IntoDict<'py> for Latent<T> {
-    fn to_native_type() -> ComfyDataTypes {
-        ComfyDataTypes::Latent
-    }
+
 }
 
 impl<T: Element + WithDType> Latent<T> {

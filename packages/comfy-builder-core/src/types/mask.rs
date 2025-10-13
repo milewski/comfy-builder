@@ -14,9 +14,7 @@ pub struct Mask<T: Element + WithDType = f32>(Image<T>);
 impl<'py, T: Element + WithDType> ComfyNativeType<'py> for Mask<T> {}
 
 impl<'py, T: Element + WithDType> IntoDict<'py> for Mask<T> {
-    fn to_native_type() -> ComfyDataTypes {
-        ComfyDataTypes::Mask
-    }
+ 
 }
 
 impl<T: Element + WithDType> Deref for Mask<T> {

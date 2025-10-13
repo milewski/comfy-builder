@@ -16,8 +16,4 @@ impl<'py, T: EnumVariants> IntoDict<'py> for Enum<T> {
 
         Ok(())
     }
-
-    fn to_native_type() -> ComfyDataTypes {
-        ComfyDataTypes::Enum
-    }
 }

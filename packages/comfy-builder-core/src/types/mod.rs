@@ -16,5 +16,4 @@ pub trait IntoDict<'py> {
     fn into_dict(dict: &mut Bound<'py, PyDict>, io: &Bound<'py, PyAny>) -> PyResult<()> {
         Ok(())
     }
-    fn to_native_type() -> ComfyDataTypes;
 }

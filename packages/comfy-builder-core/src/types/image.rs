@@ -18,9 +18,7 @@ pub struct Image<T: Element + WithDType = f32> {
 impl<'py, T: Element + WithDType> ComfyNativeType<'py> for Image<T> {}
 
 impl<'py, T: Element + WithDType> IntoDict<'py> for Image<T> {
-    fn to_native_type() -> ComfyDataTypes {
-        ComfyDataTypes::Image
-    }
+
 }
 
 impl<T: Element + WithDType> Image<T> {

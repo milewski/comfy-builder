@@ -9,6 +9,8 @@ pub mod prelude;
 pub mod registry;
 pub mod types;
 
+pub trait ComfyInput<'py>: ToComfyType + IntoDict<'py> {}
+
 pub struct Kwargs<'py>(pub Option<Bound<'py, PyDict>>);
 
 impl<'py> From<Option<Bound<'py, PyDict>>> for Kwargs<'py> {
@@ -88,57 +90,6 @@ impl ComfyDataTypes {
             ComfyDataTypes::Enum => "Combo".to_string(),
             ComfyDataTypes::ImageUpload => "Combo".to_string(),
         }
-    }
-
-    // pub fn to_type<>(&self) {
-    //     match self {
-    //         ComfyDataTypes::Int(value) => usize::into_dict(self, value),
-    //         ComfyDataTypes::Float(_) => {}
-    //         ComfyDataTypes::String => {}
-    //         ComfyDataTypes::Boolean => {}
-    //         ComfyDataTypes::Image => {}
-    //         ComfyDataTypes::Mask => {}
-    //         ComfyDataTypes::Latent => {}
-    //         ComfyDataTypes::Enum => {}
-    //         ComfyDataTypes::ImageUpload => {}
-    //     }
-    // }
-
-    pub fn generate_dict<'py>(
-        &self,
-        dict: &mut Bound<'py, PyDict>,
-        io: &Bound<'py, PyAny>,
-    ) -> PyResult<()> {
-        todo!()
-        // match *self {
-        //     ComfyDataTypes::Int(value) => match value {
-        //         "i8" => types::int::Int::<i8>::into_dict(dict, io),
-        //         "i16" => types::int::Int::<i16>::into_dict(dict, io),
-        //         "i32" => types::int::Int::<i32>::into_dict(dict, io),
-        //         "i64" => types::int::Int::<i64>::into_dict(dict, io),
-        //         "i128" => types::int::Int::<i128>::into_dict(dict, io),
-        //         "isize" => types::int::Int::<isize>::into_dict(dict, io),
-        //         "u8" => types::int::Int::<u8>::into_dict(dict, io),
-        //         "u16" => types::int::Int::<u16>::into_dict(dict, io),
-        //         "u32" => types::int::Int::<u32>::into_dict(dict, io),
-        //         "u64" => types::int::Int::<u64>::into_dict(dict, io),
-        //         "u128" => types::int::Int::<u128>::into_dict(dict, io),
-        //         "usize" => types::int::Int::<usize>::into_dict(dict, io),
-        //         value => unreachable!("invalid int type {}", value),
-        //     },
-        //     ComfyDataTypes::Float(value) => match value {
-        //         "f32" => types::int::Int::<f32>::into_dict(dict, io),
-        //         "f64" => types::int::Int::<f64>::into_dict(dict, io),
-        //         value => unreachable!("invalid int type {}", value),
-        //     },
-        //     ComfyDataTypes::String => types::string::String::into_dict(dict, io),
-        //     ComfyDataTypes::Image => types::image::Image::<f32>::into_dict(dict, io),
-        //     ComfyDataTypes::Mask => types::mask::Mask::<f32>::into_dict(dict, io),
-        //     ComfyDataTypes::Latent => types::latent::Latent::<f32>::into_dict(dict, io),
-        //     ComfyDataTypes::Boolean => types::boolean::Boolean::into_dict(dict, io),
-        //     ComfyDataTypes::Enum => Ok(()),
-        //     ComfyDataTypes::ImageUpload => Ok(()),
-        // }
     }
 }
 

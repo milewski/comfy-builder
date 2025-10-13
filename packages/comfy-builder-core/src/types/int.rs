@@ -59,10 +59,6 @@ impl<'py> IntoDict<'py> for usize
 
         Ok(())
     }
-
-    fn to_native_type() -> ComfyDataTypes {
-        ComfyDataTypes::Int(type_name::<Self>())
-    }
 }
 
 impl ToComfyType for usize {

@@ -47,27 +47,10 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
             .collect();
 
         {
-            // let (kind, body) = if field.is_enum() {
-            //     (
-            //         quote! { comfy_builder_core::ComfyDataTypes::Enum },
-            //         quote! { comfy_builder_core::types::r#enum::Enum::<#value_ident>::into_dict(&mut dict, &io) },
-            //     )
-            // } else if field.is_primitive() || field.is_tensor_type() {
-            //     (
-            //         quote! { comfy_builder_core::ComfyDataTypes::from(stringify!(#value_ident)) },
-            //         quote! { kind.generate_dict(&mut dict, &io)? },
-            //     )
-            // } else if field.is_custom_type() {
-            //     (
-            //         quote! { comfy_builder_core::ComfyDataTypes::Enum },
-            //         quote! { comfy_builder_core::types::image_upload::ImageUpload::into_dict(&mut dict, &io) },
-            //     )
-            // } else {
-            //     unreachable!("Unsupported field type");
-            // };
-
             elements.push(quote! {
                 {
+                    use comfy_builder_core::types::IntoDict;
+
                     let mut dict = pyo3::types::PyDict::new(python);
 
                     #(#attributes)*
@@ -75,9 +58,7 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
                     let kind = comfy_builder_core::ComfyDataTypes::from(stringify!(#value_ident));
                     let comfy_type = #value_ident::comfy_type();
 
-                    // #value_ident::into_dict(&mut dict, &io)?;
-
-                    // #body;
+                    #value_ident::into_dict(&mut dict, &io)?;
 
                     dict.set_item("optional", #is_optional)?;
 
@@ -108,7 +89,7 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
             // If the field is a `String`, strip out empty values so that the
             // field’s default is used instead of an empty string.
             // Returning `None` tells the deserializer to fall back to the default.
-            let extract_logic = if field.is_string() {
+            let extract_logic = if field.is_string() && field.is_optional() {
                 quote! { #extract_logic.and_then(|string| string.map(|string| if string.is_empty() { None } else { Some(string) })) }
             } else {
                 quote! { #extract_logic }
@@ -244,7 +225,6 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
 
         impl<'py> From<comfy_builder_core::prelude::Kwargs<'py>> for #name {
             fn from(kwargs: comfy_builder_core::prelude::Kwargs) -> Self {
-                println!("received: {:?}", kwargs.as_ref());
                 #name {
                     #(#decoders),*
                 }

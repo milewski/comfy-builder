@@ -7,6 +7,7 @@ pub mod int;
 pub mod latent;
 pub mod mask;
 pub mod string;
+pub mod slider;
 
 pub trait IntoDict<'py> {
     fn into_dict(_: &mut Bound<'py, PyDict>, _: &Bound<'py, PyAny>) -> PyResult<()> {

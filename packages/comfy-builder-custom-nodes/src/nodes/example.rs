@@ -1,5 +1,6 @@
 use comfy_builder_core::node::Node;
 use comfy_builder_core::prelude::{Enum, Image, Latent, Mask, NodeInput, NodeOutput, node};
+use comfy_builder_core::types::slider::Slider;
 use std::error::Error;
 
 #[derive(Enum)]
@@ -21,6 +22,7 @@ pub struct Input {
     images: Vec<Image>,
     latent: Latent,
     mask: Mask,
+    slider: Slider<i8>,
 }
 
 #[derive(NodeOutput)]
@@ -35,6 +37,7 @@ pub struct Output {
     images: Vec<Image>,
     latent: Latent,
     mask: Mask,
+    slider: i8,
 }
 
 #[node]
@@ -57,6 +60,7 @@ impl<'a> Node<'a> for Example {
             r#enum: input.r#enum,
             latent: input.latent,
             mask: input.mask,
+            slider: *input.slider,
         })
     }
 }

@@ -24,6 +24,15 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
     for field in fields {
         let property_ident = field.property_ident();
         let value_ident = field.value_ident();
+
+        let value_type_call = {
+            if field.is_wrapped_by_vector() || field.is_optional() {
+                field.inner_value_type_call().unwrap()
+            } else {
+                field.value_type_call()
+            }
+        };
+
         let mut named_attributes = field.named_attributes();
         let is_optional = field.is_optional();
 
@@ -54,9 +63,9 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
                     #(#attributes)*
 
                     let kind = comfy_builder_core::ComfyDataTypes::try_from(stringify!(#value_ident))?;
-                    let comfy_type = #value_ident::comfy_type();
+                    let comfy_type = #value_type_call::comfy_type();
 
-                    #value_ident::into_dict(&mut dict, &io)?;
+                    #value_type_call::into_dict(&mut dict, &io)?;
 
                     dict.set_item("optional", #is_optional)?;
 

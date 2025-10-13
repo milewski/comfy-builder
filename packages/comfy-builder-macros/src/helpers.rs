@@ -1,8 +1,11 @@
 use crate::options::{AnyOption, Options};
-use proc_macro2::{Ident, TokenTree};
-use quote::quote;
+use proc_macro2::{Ident, TokenStream, TokenTree};
+use quote::{ToTokens, quote};
 use std::collections::HashMap;
-use syn::{Expr, ExprLit, Field, GenericArgument, Lit, PathArguments, Type, TypePath};
+use std::process::id;
+use syn::{
+    Expr, ExprLit, Field, GenericArgument, Lit, Path, PathArguments, PathSegment, Type, TypePath,
+};
 
 macro_rules! numeric_types {
     (signed) => {
@@ -126,19 +129,56 @@ impl<'a> FieldExtractor<'a> {
         )
     }
 
+    pub fn value_type(&self) -> &Type {
+        &self.field.ty
+    }
+
+    pub fn inner_value_type_call(&self) -> Option<proc_macro2::TokenStream> {
+        if let Type::Path(type_path) = self.value_type() {
+            if let Some(segment) = type_path.path.segments.first()
+                // && segment.ident == "Vec"
+                && let PathArguments::AngleBracketed(args) = &segment.arguments
+                && let Some(GenericArgument::Type(ty)) = args.args.first()
+            {
+                return Some(extract_full_type_as_static_call(ty));
+            }
+        }
+        None
+    }
+
+    pub fn value_type_call(&self) -> proc_macro2::TokenStream {
+        extract_full_type_as_static_call(&self.value_type())
+    }
+
     /// Return the complete ident as defined on the struct side
-    pub fn output_ident(&self, force_vector: bool) -> proc_macro2::TokenStream {
-        let ident = self.value_ident();
-        let ident = match self.is_wrapped_by_vector() || force_vector {
-            true => quote! { Vec<#ident> },
-            false => quote! { #ident },
+    pub fn output_ident(&self, force_vector: bool) -> TokenStream {
+        let ident = self.value_type();
+        let is_optional = self.is_optional();
+        let mut content = quote! { #ident };
+
+        if is_optional {
+            content = match self.inner_value_type_call() {
+                None => content,
+                Some(inner) => quote! { #inner },
+            };
+        }
+
+        let content = match self.is_wrapped_by_vector() {
+            true => quote! { #content },
+            false => {
+                if force_vector {
+                    quote! { Vec<#content> }
+                } else {
+                    quote! { #content }
+                }
+            }
         };
 
         if self.is_optional() {
-            return quote! { Option<#ident> };
+            return quote! { Option<#content> };
         }
 
-        ident
+        content
     }
 
     pub fn is_wrapped_by_vector(&self) -> bool {
@@ -220,4 +260,41 @@ fn split_inner_ident(path: &TypePath) -> Option<(&Ident, &Ident)> {
     }
 
     None
+}
+
+fn extract_full_type_as_static_call(value: &Type) -> proc_macro2::TokenStream {
+    match value {
+        Type::Path(type_path) => {
+            let path_without_args: Path = Path {
+                leading_colon: type_path.path.leading_colon,
+                segments: type_path
+                    .path
+                    .segments
+                    .iter()
+                    .map(|segment| PathSegment {
+                        ident: segment.ident.clone(),
+                        arguments: PathArguments::None,
+                    })
+                    .collect(),
+            };
+
+            let generic_args: Vec<_> = type_path
+                .path
+                .segments
+                .iter()
+                .filter_map(|segment| match &segment.arguments {
+                    PathArguments::AngleBracketed(args) => Some(args),
+                    _ => None,
+                })
+                .flat_map(|args| args.args.iter())
+                .collect();
+
+            if generic_args.is_empty() {
+                quote! { #path_without_args }
+            } else {
+                quote! { #path_without_args::<#(#generic_args),*> }
+            }
+        }
+        _ => panic!("unsupported type..."),
+    }
 }

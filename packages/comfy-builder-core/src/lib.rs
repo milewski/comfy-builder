@@ -71,6 +71,18 @@ pub trait ToComfyType<'py>: IntoDict<'py> {
     fn comfy_type() -> ComfyDataTypes;
 }
 
+// impl<'py, T: ToComfyType<'py>> IntoDict<'py> for Option<T> {
+//     fn into_dict(dict: &mut Bound<'py, PyDict>, io: &Bound<'py, PyAny>) -> PyResult<()> {
+//         T::into_dict(dict, io)
+//     }
+// }
+//
+// impl<'py, T: ToComfyType<'py>> ToComfyType<'py> for Option<T> {
+//     fn comfy_type() -> ComfyDataTypes {
+//         T::comfy_type()
+//     }
+// }
+
 pub enum ComfyDataTypes {
     Int(&'static str),
     Float(&'static str),
@@ -81,6 +93,7 @@ pub enum ComfyDataTypes {
     Latent,
     Enum,
     ImageUpload,
+    Slider,
 }
 
 impl ComfyDataTypes {
@@ -95,6 +108,8 @@ impl ComfyDataTypes {
             ComfyDataTypes::Boolean => "Boolean".to_string(),
             ComfyDataTypes::Enum => "Combo".to_string(),
             ComfyDataTypes::ImageUpload => "Combo".to_string(),
+            // Custom
+            ComfyDataTypes::Slider => "Int".to_string(),
         }
     }
 }
@@ -121,6 +136,7 @@ impl TryFrom<&'static str> for ComfyDataTypes {
             "Image" => ComfyDataTypes::Image,
             "Mask" => ComfyDataTypes::Mask,
             "Latent" => ComfyDataTypes::Latent,
+            "Slider" => ComfyDataTypes::Slider,
             kind => Err(PyValueError::new_err(format!(
                 "Unknown data type {:?}",
                 kind
@@ -135,7 +151,7 @@ impl TryFrom<&'static str> for ComfyDataTypes {
 macro_rules! set_defaults {
     ($dict:expr, $( $key:expr => $value:expr ),* $(,)?) => {
         $(
-            if $dict.get_item($key)?.is_none() {
+            if let Err(_) = $dict.get_item($key) {
                 $dict.set_item($key, $value)?;
             }
         )*

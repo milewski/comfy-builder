@@ -89,9 +89,9 @@ pub fn enum_derive(input: TokenStream) -> TokenStream {
             }
         }
 
-        impl<'py> comfy_builder_core::ToComfyType<'py> for #name {
-            fn comfy_type() -> comfy_builder_core::ComfyDataTypes {
-                comfy_builder_core::ComfyDataTypes::Enum
+        impl<'py> comfy_builder_core::prelude::ToComfyType<'py> for #name {
+            fn comfy_type() -> comfy_builder_core::prelude::ComfyType {
+                comfy_builder_core::prelude::ComfyType::Enum
             }
         }
 

@@ -1,11 +1,11 @@
 use crate::types::image::Image;
-use crate::types::{IntoDict};
-use crate::{ComfyDataTypes, ToComfyType};
+use crate::types::IntoDict;
 use candle_core::{Device, WithDType};
 use numpy::Element;
 use pyo3::prelude::PyAnyMethods;
 use pyo3::types::PyDict;
 use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyErr, PyResult, Python};
+use crate::types::comfy_type::{ComfyType, ToComfyType};
 
 #[derive(Clone, Debug)]
 pub struct Latent<T = f32> {
@@ -14,8 +14,8 @@ pub struct Latent<T = f32> {
 }
 
 impl<'py> ToComfyType<'py> for Latent<f32> {
-    fn comfy_type() -> ComfyDataTypes {
-        ComfyDataTypes::Latent
+    fn comfy_type() -> ComfyType {
+        ComfyType::Latent
     }
 }
 

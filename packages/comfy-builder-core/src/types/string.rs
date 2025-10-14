@@ -1,9 +1,9 @@
 use crate::types::IntoDict;
-use crate::{ComfyDataTypes, ToComfyType};
+use crate::types::comfy_type::{ComfyType, ToComfyType};
 
 impl<'py> ToComfyType<'py> for String {
-    fn comfy_type() -> ComfyDataTypes {
-        ComfyDataTypes::String
+    fn comfy_type() -> ComfyType {
+        ComfyType::String
     }
 }
 

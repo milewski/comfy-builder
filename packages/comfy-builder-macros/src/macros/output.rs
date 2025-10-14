@@ -41,7 +41,7 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
 
             inserts.push(quote! {
                 {
-                    let kind = comfy_builder_core::ComfyDataTypes::try_from(stringify!(#value_ident))?;
+                    let kind = comfy_builder_core::prelude::ComfyType::try_from(stringify!(#value_ident))?;
                     let dict = pyo3::types::PyDict::new(python);
                     dict.set_item("is_output_list", #is_list)?;
                     dict.set_item("display_name", stringify!(#property_ident))?;

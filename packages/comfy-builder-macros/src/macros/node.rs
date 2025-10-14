@@ -77,9 +77,8 @@ pub fn node(attr: TokenStream, input: TokenStream) -> TokenStream {
         .unwrap_or_else(|| quote! { None::<std::string::String> });
 
     TokenStream::from(quote! {
-        use pyo3::prelude::*;
+        // use pyo3::prelude::*;
         use pyo3::IntoPyObjectExt;
-        use comfy_builder_core::{In, Out};
 
         #[derive(std::default::Default)]
         #input_struct
@@ -94,6 +93,8 @@ pub fn node(attr: TokenStream, input: TokenStream) -> TokenStream {
             class: pyo3::Bound<'py, pyo3::types::PyType>,
             kwargs: Option<pyo3::Bound<'py, pyo3::types::PyDict>>,
         ) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::PyAny>> {
+            use comfy_builder_core::node::Out;
+
             let instance = #ident::new();
             let input = instance.initialize_inputs(kwargs.into())?;
             let output = instance.execute(input).map_err(|error| {
@@ -113,14 +114,17 @@ pub fn node(attr: TokenStream, input: TokenStream) -> TokenStream {
 
         #[pyfunction]
         fn __define_schema<'py>(class: pyo3::Bound<'py, pyo3::types::PyType>) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::PyAny>> {
+            use comfy_builder_core::node::In;
+            use comfy_builder_core::node::Out;
+
             let python = class.py();
             let io = python
                 .import(format!("comfy_api.{}", crate::__injected::API_VERSION))?
                 .getattr("io")?;
 
-            let inputs = <#ident as comfy_builder_core::prelude::Node>::In::blueprints(python, &io)?;
-            let outputs = <#ident as comfy_builder_core::prelude::Node>::Out::blueprints(python, &io)?;
-            let is_list = <#ident as comfy_builder_core::prelude::Node>::In::is_list();
+            let inputs = <#ident as comfy_builder_core::node::Node>::In::blueprints(python, &io)?;
+            let outputs = <#ident as comfy_builder_core::node::Node>::Out::blueprints(python, &io)?;
+            let is_list = <#ident as comfy_builder_core::node::Node>::In::is_list();
 
             let kwargs = pyo3::types::PyDict::new(python);
 

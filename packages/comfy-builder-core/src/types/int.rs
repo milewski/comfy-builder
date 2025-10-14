@@ -1,17 +1,16 @@
 use crate::types::IntoDict;
-use crate::{ComfyDataTypes, ToComfyType};
 use num_traits::ConstZero;
 use pyo3::prelude::{PyAnyMethods, PyDictMethods};
 use pyo3::types::PyDict;
 use pyo3::{Bound, PyAny, PyResult};
-use std::any::type_name;
+use crate::types::comfy_type::{ComfyType, ToComfyType};
 
 macro_rules! impl_comfy_type {
     ($($primitive:ty),*) => {
         $(
             impl<'py> ToComfyType<'py> for $primitive {
-                fn comfy_type() -> ComfyDataTypes {
-                    ComfyDataTypes::Int(type_name::<Self>())
+                fn comfy_type() -> ComfyType {
+                    ComfyType::Int
                 }
             }
 
@@ -51,10 +50,9 @@ macro_rules! impl_comfy_type {
                 }
             }
         )*
-
     };
 }
 
 impl_comfy_type!(
-    usize, u8, u16, u32, u64, u128, isize, i8, i16, i32, i64, i128
+    usize, u8, u16, u32, u64, u128, isize, i8, i16, i32, i64, i128, f32, f64
 );

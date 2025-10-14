@@ -8,6 +8,7 @@ pub mod latent;
 pub mod mask;
 pub mod string;
 pub mod slider;
+pub mod comfy_type;
 
 pub trait IntoDict<'py> {
     fn into_dict(_: &mut Bound<'py, PyDict>, _: &Bound<'py, PyAny>) -> PyResult<()> {

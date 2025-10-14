@@ -1,12 +1,12 @@
 use crate::types::IntoDict;
-use crate::{ComfyDataTypes, ToComfyType, set_defaults};
+use crate::set_defaults;
 use num_traits::{Bounded, Num};
 use pyo3::conversion::FromPyObjectBound;
 use pyo3::prelude::PyAnyMethods;
 use pyo3::types::PyDict;
 use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyResult};
-use std::any::type_name;
 use std::ops::Deref;
+use crate::types::comfy_type::{ComfyType, ToComfyType};
 
 pub struct Slider<T> {
     value: T,
@@ -30,8 +30,8 @@ impl<'py, T> ToComfyType<'py> for Slider<T>
 where
     T: Num + Bounded + PartialOrd + IntoPyObject<'py> + for<'a> FromPyObjectBound<'a, 'py>,
 {
-    fn comfy_type() -> ComfyDataTypes {
-        ComfyDataTypes::Int(type_name::<T>())
+    fn comfy_type() -> ComfyType {
+        ComfyType::Int
     }
 }
 

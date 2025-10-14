@@ -6,6 +6,8 @@ use std::error::Error;
 pub struct Input {
     string: String,
     boolean: bool,
+    f32: f32,
+    f64: f64,
     i8: i8,
     i16: i16,
     i32: i32,
@@ -24,6 +26,8 @@ pub struct Input {
 pub struct Output {
     string: String,
     boolean: bool,
+    f32: f32,
+    f64: f64,
     i8: i8,
     i16: i16,
     i32: i32,
@@ -53,6 +57,8 @@ impl<'a> Node<'a> for Primitives {
         Ok(Output {
             string: input.string,
             boolean: input.boolean,
+            f32: input.f32,
+            f64: input.f64,
             i8: input.i8,
             i16: input.i16,
             i32: input.i32,
@@ -81,6 +87,9 @@ mod test {
 
         assert_eq!(output.string, String::default());
         assert_eq!(output.boolean, bool::default());
+
+        assert_eq!(output.f32, f32::default());
+        assert_eq!(output.f64, f64::default());
 
         assert_eq!(output.u8, u8::default());
         assert_eq!(output.u16, u16::default());

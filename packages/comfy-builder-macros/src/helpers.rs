@@ -1,8 +1,7 @@
 use crate::options::{AnyOption, Options};
 use proc_macro2::{Ident, TokenStream, TokenTree};
-use quote::{ToTokens, quote};
+use quote::quote;
 use std::collections::HashMap;
-use std::process::id;
 use syn::{
     Expr, ExprLit, Field, GenericArgument, Lit, Path, PathArguments, PathSegment, Type, TypePath,
 };
@@ -134,20 +133,19 @@ impl<'a> FieldExtractor<'a> {
     }
 
     pub fn inner_value_type_call(&self) -> Option<proc_macro2::TokenStream> {
-        if let Type::Path(type_path) = self.value_type() {
-            if let Some(segment) = type_path.path.segments.first()
+        if let Type::Path(type_path) = self.value_type()
+            && let Some(segment) = type_path.path.segments.first()
                 // && segment.ident == "Vec"
                 && let PathArguments::AngleBracketed(args) = &segment.arguments
                 && let Some(GenericArgument::Type(ty)) = args.args.first()
             {
                 return Some(extract_full_type_as_static_call(ty));
             }
-        }
         None
     }
 
     pub fn value_type_call(&self) -> proc_macro2::TokenStream {
-        extract_full_type_as_static_call(&self.value_type())
+        extract_full_type_as_static_call(self.value_type())
     }
 
     /// Return the complete ident as defined on the struct side

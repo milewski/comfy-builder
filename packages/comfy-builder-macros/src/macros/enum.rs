@@ -46,7 +46,6 @@ pub fn enum_derive(input: TokenStream) -> TokenStream {
         .collect();
 
     TokenStream::from(quote! {
-
         use pyo3::prelude::*;
         use pyo3::exceptions::*;
 
@@ -89,18 +88,15 @@ pub fn enum_derive(input: TokenStream) -> TokenStream {
             }
         }
 
-        impl<'py> comfy_builder_core::prelude::ToComfyType<'py> for #name {
+        impl<'py> comfy_builder_core::prelude::AsInput<'py> for #name {
             fn comfy_type() -> comfy_builder_core::prelude::ComfyType {
                 comfy_builder_core::prelude::ComfyType::Enum
             }
-        }
 
-        impl<'py> comfy_builder_core::IntoDict<'py> for #name {
-             fn into_dict(dict: &mut pyo3::Bound<'py, pyo3::types::PyDict>, io: &pyo3::Bound<'py, pyo3::PyAny>) -> pyo3::PyResult<()> {
+            fn set_options(dict: &mut pyo3::Bound<'py, pyo3::types::PyDict>, io: &pyo3::Bound<'py, pyo3::PyAny>) -> pyo3::PyResult<()> {
                 dict.set_item("options", vec![#(#variant_names),*])?;
                 Ok(())
             }
         }
-
     })
 }

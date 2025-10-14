@@ -1,4 +1,4 @@
-use crate::types::IntoDict;
+use crate::types::comfy_type::{AsInput, ComfyType};
 use candle_core::shape::ShapeWithOneHole;
 use candle_core::{Device, Tensor as CandleTensor, WithDType};
 use numpy::{Element, PyArray, PyArrayDyn, PyArrayMethods, PyUntypedArrayMethods};
@@ -7,7 +7,6 @@ use pyo3::prelude::PyAnyMethods;
 use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyErr, PyResult, Python};
 use std::marker::PhantomData;
 use std::ops::Deref;
-use crate::types::comfy_type::{ComfyType, ToComfyType};
 
 #[derive(Clone, Debug)]
 pub struct Image<T = f32> {
@@ -15,9 +14,13 @@ pub struct Image<T = f32> {
     marker: PhantomData<T>,
 }
 
-impl<'py> IntoDict<'py> for Image<f32> {}
+impl<'py, T: Element + WithDType> FromPyObject<'py> for Image<T> {
+    fn extract_bound(object: &Bound<'py, PyAny>) -> PyResult<Self> {
+        Image::new(object.extract::<Bound<'py, PyAny>>()?, &Device::Cpu)
+    }
+}
 
-impl<'py> ToComfyType<'py> for Image<f32> {
+impl<'py, T: Element + WithDType> AsInput<'py> for Image<T> {
     fn comfy_type() -> ComfyType {
         ComfyType::Image
     }
@@ -120,11 +123,5 @@ impl<T: Element + WithDType> Deref for Image<T> {
 
     fn deref(&self) -> &Self::Target {
         &self.tensor
-    }
-}
-
-impl<'py, T: Element + WithDType> FromPyObject<'py> for Image<T> {
-    fn extract_bound(object: &Bound<'py, PyAny>) -> PyResult<Self> {
-        Image::new(object.extract::<Bound<'py, PyAny>>()?, &Device::Cpu)
     }
 }

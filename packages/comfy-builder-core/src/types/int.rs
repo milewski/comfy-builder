@@ -1,21 +1,18 @@
-use crate::types::IntoDict;
 use num_traits::ConstZero;
 use pyo3::prelude::{PyAnyMethods, PyDictMethods};
 use pyo3::types::PyDict;
 use pyo3::{Bound, PyAny, PyResult};
-use crate::types::comfy_type::{ComfyType, ToComfyType};
+use crate::types::comfy_type::{ComfyType, AsInput};
 
 macro_rules! impl_comfy_type {
     ($($primitive:ty),*) => {
         $(
-            impl<'py> ToComfyType<'py> for $primitive {
+            impl<'py> AsInput<'py> for $primitive {
                 fn comfy_type() -> ComfyType {
                     ComfyType::Int
                 }
-            }
 
-            impl<'py> IntoDict<'py> for $primitive {
-                fn into_dict(dict: &mut Bound<'py, PyDict>, _: &Bound<'py, PyAny>) -> PyResult<()> {
+                fn set_options(dict: &mut Bound<'py, PyDict>, _: &Bound<'py, PyAny>) -> PyResult<()> {
                     if let Ok(None) = dict.get_item("min") {
                         dict.set_item("min", Self::MIN)?;
                     }

@@ -1,12 +1,11 @@
-use crate::types::IntoDict;
 use crate::set_defaults;
+use crate::types::comfy_type::{ComfyType, AsInput};
 use num_traits::{Bounded, Num};
 use pyo3::conversion::FromPyObjectBound;
 use pyo3::prelude::PyAnyMethods;
 use pyo3::types::PyDict;
 use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyResult};
 use std::ops::Deref;
-use crate::types::comfy_type::{ComfyType, ToComfyType};
 
 pub struct Slider<T> {
     value: T,
@@ -26,20 +25,15 @@ impl<T> Deref for Slider<T> {
     }
 }
 
-impl<'py, T> ToComfyType<'py> for Slider<T>
+impl<'py, T> AsInput<'py> for Slider<T>
 where
     T: Num + Bounded + PartialOrd + IntoPyObject<'py> + for<'a> FromPyObjectBound<'a, 'py>,
 {
     fn comfy_type() -> ComfyType {
         ComfyType::Int
     }
-}
 
-impl<'py, T> IntoDict<'py> for Slider<T>
-where
-    T: Num + Bounded + PartialOrd + IntoPyObject<'py> + for<'a> FromPyObjectBound<'a, 'py>,
-{
-    fn into_dict(dict: &mut Bound<'py, PyDict>, io: &Bound<'py, PyAny>) -> PyResult<()> {
+    fn set_options(dict: &mut Bound<'py, PyDict>, io: &Bound<'py, PyAny>) -> PyResult<()> {
         set_defaults!(dict,
             "min" => T::min_value(),
             "max" => T::max_value(),

@@ -93,7 +93,7 @@ pub fn node(attr: TokenStream, input: TokenStream) -> TokenStream {
             class: pyo3::Bound<'py, pyo3::types::PyType>,
             kwargs: Option<pyo3::Bound<'py, pyo3::types::PyDict>>,
         ) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::PyAny>> {
-            use comfy_builder_core::node::Out;
+            use comfy_builder_core::prelude::Out;
 
             let instance = #ident::new();
             let input = instance.initialize_inputs(kwargs.into())?;
@@ -114,17 +114,17 @@ pub fn node(attr: TokenStream, input: TokenStream) -> TokenStream {
 
         #[pyfunction]
         fn __define_schema<'py>(class: pyo3::Bound<'py, pyo3::types::PyType>) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::PyAny>> {
-            use comfy_builder_core::node::In;
-            use comfy_builder_core::node::Out;
+            use comfy_builder_core::prelude::In;
+            use comfy_builder_core::prelude::Out;
 
             let python = class.py();
             let io = python
                 .import(format!("comfy_api.{}", crate::__injected::API_VERSION))?
                 .getattr("io")?;
 
-            let inputs = <#ident as comfy_builder_core::node::Node>::In::blueprints(python, &io)?;
-            let outputs = <#ident as comfy_builder_core::node::Node>::Out::blueprints(python, &io)?;
-            let is_list = <#ident as comfy_builder_core::node::Node>::In::is_list();
+            let inputs = <#ident as comfy_builder_core::prelude::Node>::In::blueprints(python, &io)?;
+            let outputs = <#ident as comfy_builder_core::prelude::Node>::Out::blueprints(python, &io)?;
+            let is_list = <#ident as comfy_builder_core::prelude::Node>::In::is_list();
 
             let kwargs = pyo3::types::PyDict::new(python);
 
@@ -147,7 +147,7 @@ pub fn node(attr: TokenStream, input: TokenStream) -> TokenStream {
             io.getattr("Schema")?.call((), Some(&kwargs))
         }
 
-        impl comfy_builder_core::node::NodeFunctionProvider for #ident {
+        impl comfy_builder_core::prelude::NodeFunctionProvider for #ident {
 
             fn define_fn(python: pyo3::Python) -> pyo3::PyResult<pyo3::Bound<pyo3::types::PyCFunction>> {
                 wrap_pyfunction!(__define_schema, python)

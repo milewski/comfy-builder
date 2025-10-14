@@ -1,9 +1,6 @@
-use crate::types::IntoDict;
-use crate::types::comfy_type::{ComfyType, ToComfyType};
+use crate::types::comfy_type::{ComfyType, AsInput};
 
-impl<'py> IntoDict<'py> for bool {}
-
-impl<'py> ToComfyType<'py> for bool {
+impl<'py> AsInput<'py> for bool {
     fn comfy_type() -> ComfyType {
         ComfyType::Boolean
     }

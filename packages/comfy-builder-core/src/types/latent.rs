@@ -1,11 +1,10 @@
+use crate::types::comfy_type::{AsInput, ComfyType};
 use crate::types::image::Image;
-use crate::types::IntoDict;
 use candle_core::{Device, WithDType};
 use numpy::Element;
 use pyo3::prelude::PyAnyMethods;
 use pyo3::types::PyDict;
 use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyErr, PyResult, Python};
-use crate::types::comfy_type::{ComfyType, ToComfyType};
 
 #[derive(Clone, Debug)]
 pub struct Latent<T = f32> {
@@ -13,13 +12,17 @@ pub struct Latent<T = f32> {
     noise_mask: Option<Image<T>>,
 }
 
-impl<'py> ToComfyType<'py> for Latent<f32> {
+impl<'py, T: Element + WithDType> FromPyObject<'py> for Latent<T> {
+    fn extract_bound(object: &Bound<'py, PyAny>) -> PyResult<Self> {
+        Latent::new(object.extract::<Bound<'py, PyAny>>()?)
+    }
+}
+
+impl<'py, T: Element + WithDType> AsInput<'py> for Latent<T> {
     fn comfy_type() -> ComfyType {
         ComfyType::Latent
     }
 }
-
-impl<'py> IntoDict<'py> for Latent<f32> {}
 
 impl<T: Element + WithDType> Latent<T> {
     pub fn new(any: Bound<PyAny>) -> PyResult<Self> {
@@ -56,12 +59,6 @@ impl<'py, T: Element + WithDType> IntoPyObject<'py> for Latent<T> {
         }
 
         Ok(dic.into_any())
-    }
-}
-
-impl<'py, T: Element + WithDType> FromPyObject<'py> for Latent<T> {
-    fn extract_bound(object: &Bound<'py, PyAny>) -> PyResult<Self> {
-        Latent::new(object.extract::<Bound<'py, PyAny>>()?)
     }
 }
 

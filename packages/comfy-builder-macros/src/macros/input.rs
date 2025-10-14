@@ -56,18 +56,18 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
         {
             elements.push(quote! {
                 {
-                    use comfy_builder_core::types::IntoDict;
+                    use comfy_builder_core::prelude::AsInput;
 
                     let mut dict = pyo3::types::PyDict::new(python);
                     let comfy_type = #value_type_call::comfy_type();
 
                     #(#attributes)*
 
-                    #value_type_call::into_dict(&mut dict, &io)?;
+                    #value_type_call::set_options(&mut dict, &io)?;
 
                     dict.set_item("optional", #is_optional)?;
 
-                    io.getattr(comfy_type.to_comfy())?.getattr("Input")?.call((#display_name,), Some(&dict))?
+                    io.getattr(comfy_type.to_string())?.getattr("Input")?.call((#display_name,), Some(&dict))?
                 }
             });
         }
@@ -115,7 +115,7 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(quote! {
         impl<'py> comfy_builder_core::node::In<'py> for #name {
             fn blueprints(python: pyo3::Python<'py>, io: &pyo3::Bound<'py, pyo3::PyAny>) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::types::PyList>> {
-                use comfy_builder_core::prelude::ToComfyType;
+                use comfy_builder_core::prelude::AsInput;
 
                 pyo3::types::PyList::new(python,[#(#elements),*])
             }
@@ -125,10 +125,10 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
             }
         }
 
-        impl<'py> TryFrom<comfy_builder_core::node::Kwargs<'py>> for #name {
+        impl<'py> TryFrom<comfy_builder_core::prelude::Kwargs<'py>> for #name {
             type Error = pyo3::PyErr;
 
-            fn try_from(kwargs: comfy_builder_core::node::Kwargs) -> Result<Self, Self::Error> {
+            fn try_from(kwargs: comfy_builder_core::prelude::Kwargs) -> Result<Self, Self::Error> {
                 Ok(#name {
                     #(#decoders),*
                 })

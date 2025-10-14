@@ -1,4 +1,4 @@
-use crate::helpers::FieldExtractor;
+use crate::helpers::FieldHelper;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{Data, DeriveInput, Fields, parse_macro_input};
@@ -17,7 +17,7 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
 
     if let Fields::Named(fields_named) = fields {
         for field in fields_named.named {
-            let field = FieldExtractor::from(&field);
+            let field = FieldHelper::from(&field);
             let value_ident = field.value_ident();
             let property_ident = field.property_ident();
             let named_attributes = field.named_attributes();
@@ -43,7 +43,7 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
                 {
                     let comfy_type = comfy_builder_core::prelude::ComfyType::try_from(stringify!(#value_ident))?;
                     let dict = pyo3::types::PyDict::new(python);
-                    
+
                     dict.set_item("is_output_list", #is_list)?;
                     dict.set_item("display_name", stringify!(#property_ident))?;
 

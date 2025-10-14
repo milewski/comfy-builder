@@ -1,15 +1,15 @@
+use crate::types::comfy_type::{AsInput, ComfyType};
 use num_traits::ConstZero;
 use pyo3::prelude::{PyAnyMethods, PyDictMethods};
 use pyo3::types::PyDict;
 use pyo3::{Bound, PyAny, PyResult};
-use crate::types::comfy_type::{ComfyType, AsInput};
 
 macro_rules! impl_comfy_type {
-    ($($primitive:ty),*) => {
+    ($($primitive:ty => $ctype:expr),*) => {
         $(
             impl<'py> AsInput<'py> for $primitive {
                 fn comfy_type() -> ComfyType {
-                    ComfyType::Int
+                    $ctype
                 }
 
                 fn set_options(dict: &mut Bound<'py, PyDict>, _: &Bound<'py, PyAny>) -> PyResult<()> {
@@ -23,6 +23,12 @@ macro_rules! impl_comfy_type {
 
                     if let Ok(None) = dict.get_item("default") {
                         dict.set_item("default", Self::ZERO)?;
+                    }
+
+                    if $ctype == ComfyType::Float {
+                        if let Ok(None) = dict.get_item("step") {
+                            dict.set_item("step", 0.01)?;
+                        }
                     }
 
                     if let (Some(min), Some(max), Some(default)) = (
@@ -51,5 +57,18 @@ macro_rules! impl_comfy_type {
 }
 
 impl_comfy_type!(
-    usize, u8, u16, u32, u64, u128, isize, i8, i16, i32, i64, i128, f32, f64
+    usize => ComfyType::Int,
+    u8 => ComfyType::Int,
+    u16 => ComfyType::Int,
+    u32 => ComfyType::Int,
+    u64 => ComfyType::Int,
+    u128 => ComfyType::Int,
+    isize => ComfyType::Int,
+    i8 => ComfyType::Int,
+    i16 => ComfyType::Int,
+    i32 => ComfyType::Int,
+    i64 => ComfyType::Int,
+    i128 => ComfyType::Int,
+    f32 => ComfyType::Float,
+    f64 => ComfyType::Float
 );

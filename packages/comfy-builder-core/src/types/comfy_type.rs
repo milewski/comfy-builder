@@ -12,6 +12,7 @@ pub trait AsInput<'py>: FromPyObject<'py> {
     }
 }
 
+#[derive(PartialEq)]
 pub enum ComfyType {
     Int,
     Float,
@@ -21,7 +22,6 @@ pub enum ComfyType {
     Mask,
     Latent,
     Enum,
-    ImageUpload,
     Slider,
 }
 
@@ -39,7 +39,6 @@ impl Display for ComfyType {
                 ComfyType::Latent => "Latent".to_string(),
                 ComfyType::Boolean => "Boolean".to_string(),
                 ComfyType::Enum => "Combo".to_string(),
-                ComfyType::ImageUpload => "Combo".to_string(),
                 // Custom
                 ComfyType::Slider => "Int".to_string(),
             }

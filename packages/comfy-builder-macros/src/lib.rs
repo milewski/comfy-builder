@@ -1,7 +1,6 @@
 use proc_macro::TokenStream;
 
 mod macros;
-mod options;
 mod helpers;
 
 #[proc_macro_attribute]

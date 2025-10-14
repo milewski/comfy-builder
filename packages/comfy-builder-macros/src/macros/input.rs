@@ -1,4 +1,4 @@
-use crate::helpers::FieldExtractor;
+use crate::helpers::FieldHelper;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{Data, DeriveInput, Fields, parse_macro_input};
@@ -18,13 +18,11 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
     let mut elements: Vec<proc_macro2::TokenStream> = vec![];
     let mut decoders: Vec<proc_macro2::TokenStream> = vec![];
 
-    let fields: Vec<_> = fields.iter().map(FieldExtractor::from).collect();
+    let fields: Vec<_> = fields.iter().map(FieldHelper::from).collect();
     let is_list = fields.iter().any(|field| field.is_wrapped_by_vector());
 
     for field in fields {
         let property_ident = field.property_ident();
-        let value_ident = field.value_ident();
-
         let value_type_call = {
             if field.is_wrapped_by_vector() || field.is_optional() {
                 field.inner_value_type_call().unwrap()
@@ -43,13 +41,6 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
 
         let attributes: Vec<proc_macro2::TokenStream> = named_attributes
             .into_iter()
-            .map(|(key, value)| {
-                if key == "doc" {
-                    ("tooltip".to_string(), value)
-                } else {
-                    (key, value)
-                }
-            })
             .map(|(key, value)| quote! { dict.set_item(#key, #value)?; })
             .collect();
 

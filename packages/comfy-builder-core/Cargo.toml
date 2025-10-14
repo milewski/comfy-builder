@@ -17,10 +17,9 @@ rust-version = "1.90.0"
 name = "comfy_builder_core"
 
 [dependencies]
-pyo3 = { version = "0.26.0", features = ["extension-module", "abi3-py312"] }
+pyo3 = { version = "0.26.0", features = ["abi3-py312", "experimental-async"] }
 candle-core = "0.9.1"
-comfy-builder-macros = { version = "0.0.1", path = "../comfy-builder-macros" }
+comfy-builder-macros = { path = "../comfy-builder-macros" }
 numpy = "0.26.0"
-indexmap = "2.11.4"
 inventory = "0.3.21"
 num-traits = "0.2.19"

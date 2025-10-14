@@ -10,6 +10,9 @@ docker:
 clippy:
     cargo clippy --fix --allow-dirty
 
+test:
+    cargo test --release
+
 publish:
     cargo ws version --no-git-push
     cargo publish -p comfy-builder-macros

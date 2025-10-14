@@ -18,16 +18,9 @@ name = "comfy_builder_custom_nodes"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.26.0", features = ["extension-module", "abi3-py312", "experimental-async"] }
-candle-core = "0.9.1"
+pyo3 = { version = "0.26.0" }
 comfy-builder-core = { version = "0.0.1", path = "../comfy-builder-core" }
-
-rayon = "1.11.0"
-resize = "0.8.8"
-indexmap = "2.11.4"
 inventory = "0.3.21"
-tokio = { version = "1.47.1", features = ["full"] }
-pyo3-async-runtimes = { version = "0.26.0", features = ["async-std", "tokio-runtime"] }
 
 [build-dependencies]
 toml = "0.9.7"

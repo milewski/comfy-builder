@@ -3,13 +3,19 @@ use crate::{ComfyDataTypes, ToComfyType, set_defaults};
 use num_traits::{Bounded, Num};
 use pyo3::conversion::FromPyObjectBound;
 use pyo3::prelude::PyAnyMethods;
+use pyo3::types::PyDict;
 use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyResult};
 use std::any::type_name;
 use std::ops::Deref;
-use pyo3::types::PyDict;
 
 pub struct Slider<T> {
     value: T,
+}
+
+impl<T> Slider<T> {
+    pub fn new(value: T) -> Self {
+        Slider { value }
+    }
 }
 
 impl<T> Deref for Slider<T> {
@@ -40,7 +46,11 @@ where
             "default" => T::zero(),
         );
 
-        if let (Ok(min), Ok(max), Ok(default)) = (dict.get_item("min"), dict.get_item("max"), dict.get_item("default")) {
+        if let (Ok(min), Ok(max), Ok(default)) = (
+            dict.get_item("min"),
+            dict.get_item("max"),
+            dict.get_item("default"),
+        ) {
             let min = min.extract::<T>()?;
             let max = max.extract::<T>()?;
             let default = default.extract::<T>()?;

@@ -157,3 +157,13 @@ macro_rules! set_defaults {
         )*
     };
 }
+
+#[macro_export]
+macro_rules! run_node {
+    ($node:ident, $input:expr) => {{
+        match $node::new().execute($input) {
+            Ok(output) => output,
+            Err(e) => panic!("`{}` node failed: {}", stringify!($node), e),
+        }
+    }};
+}

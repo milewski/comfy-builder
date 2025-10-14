@@ -1,2 +1,3 @@
-pub mod resize_image;
-pub mod example;
+mod resize_image;
+mod primitives;
+mod options;

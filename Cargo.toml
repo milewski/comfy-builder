@@ -25,10 +25,11 @@ members = [
     "packages/comfy-builder-core",
     "packages/comfy-builder-macros",
     "packages/comfy-builder-custom-nodes",
+    "packages/comfy-rusty-nodes",
 ]
 
 [workspace.dependencies]
 #pyo3 = { version = "0.26.0", features = ["abi3-py312", "experimental-async"] }
 #candle-core = "0.9.1"
 #comfy-builder-macros = { path = "packages/comfy-builder-macros" }
-#comfy-builder-core = { path = "packages/comfy-builder-core" }
+comfy-builder-core = { version = "0.0.4", path = "packages/comfy-builder-core" }

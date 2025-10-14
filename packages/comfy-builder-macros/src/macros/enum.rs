@@ -84,7 +84,7 @@ pub fn enum_derive(input: TokenStream) -> TokenStream {
 
         impl<'py> pyo3::FromPyObject<'py> for #name {
             fn extract_bound(object: &pyo3::Bound<'py, pyo3::PyAny>) -> pyo3::PyResult<Self> {
-                Ok(Self::try_from(object.extract::<&str>()?)?)
+                Self::try_from(object.extract::<&str>()?)
             }
         }
 

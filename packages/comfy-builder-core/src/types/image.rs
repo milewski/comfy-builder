@@ -9,7 +9,7 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 
 #[derive(Clone, Debug)]
-pub struct Image<T = f32> {
+pub struct Image<T: Element + WithDType> {
     tensor: CandleTensor,
     marker: PhantomData<T>,
 }

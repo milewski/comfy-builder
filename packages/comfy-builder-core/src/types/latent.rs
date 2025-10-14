@@ -7,7 +7,7 @@ use pyo3::types::PyDict;
 use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyErr, PyResult, Python};
 
 #[derive(Clone, Debug)]
-pub struct Latent<T = f32> {
+pub struct Latent<T: Element + WithDType = f32> {
     samples: Image<T>,
     noise_mask: Option<Image<T>>,
 }

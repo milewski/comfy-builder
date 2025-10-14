@@ -4,14 +4,14 @@ use std::error::Error;
 
 #[derive(NodeInput, Default)]
 pub struct Input {
-    string: String,
-    string_option: Option<String>,
+    string: Vec<String>,
+    string_option: Option<Vec<String>>,
 }
 
 #[derive(NodeOutput)]
 pub struct Output {
-    string: String,
-    string_option: Option<String>,
+    string: Vec<String>,
+    string_option: Option<Vec<String>>,
 }
 
 #[node(
@@ -39,10 +39,10 @@ mod test {
     use comfy_builder_core::run_node;
 
     #[test]
-    pub fn test_options() {
+    pub fn test_vector() {
         let output = run_node!(Options, Input::default());
 
-        assert_eq!(output.string, String::default());
+        assert_eq!(output.string, Vec::<String>::new());
         assert_eq!(output.string_option, None);
     }
 }

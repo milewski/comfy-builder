@@ -35,7 +35,7 @@ pub struct Output {
 
 #[node(
     category = "MyNode / Math",
-    description = "Sums the left input with the right input."
+    description = "Sums a + b inputs."
 )]
 pub struct Sum;
 

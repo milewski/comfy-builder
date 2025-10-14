@@ -85,7 +85,7 @@ pub fn boostrap(input: TokenStream) -> TokenStream {
         }
 
         #[pyo3::pymodule]
-        fn comfy_builder_custom_nodes<'py>(
+        fn #module_name_ident<'py>(
             python: pyo3::Python<'py>,
             module: pyo3::Bound<'py, pyo3::prelude::PyModule>,
         ) -> pyo3::PyResult<()> {

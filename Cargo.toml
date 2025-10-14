@@ -1,5 +1,5 @@
 [workspace.package]
-version = "0.0.2"
+version = "0.0.4"
 edition = "2024"
 description = "A system for building custom nodes for ComfyUI in Rust."
 readme = "README.md"

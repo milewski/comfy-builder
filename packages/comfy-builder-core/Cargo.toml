@@ -1,6 +1,6 @@
 [package]
 name = "comfy-builder-core"
-version = "0.0.1"
+version = "0.0.4"
 edition = "2024"
 description = "A system for building custom nodes for ComfyUI in Rust."
 readme = "../../README.md"
@@ -19,7 +19,7 @@ name = "comfy_builder_core"
 [dependencies]
 pyo3 = { version = "0.26.0", features = ["abi3-py312", "experimental-async"] }
 candle-core = "0.9.1"
-comfy-builder-macros = { path = "../comfy-builder-macros" }
+comfy-builder-macros = { version = "0.0.4", path = "../comfy-builder-macros" }
 numpy = "0.26.0"
 inventory = "0.3.21"
 num-traits = "0.2.19"

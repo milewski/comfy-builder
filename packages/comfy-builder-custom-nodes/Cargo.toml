@@ -1,6 +1,6 @@
 [package]
 name = "comfy-builder-custom-nodes"
-version = "0.0.1"
+version = "0.0.4"
 edition = "2024"
 description = "A system for building custom nodes for ComfyUI in Rust."
 readme = "../../README.md"
@@ -18,13 +18,8 @@ name = "comfy_builder_custom_nodes"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.26.0", features = ["extension-module", "abi3-py312"] }
-candle-core = "0.9.1"
-comfy-builder-core = { version = "0.0.1", path = "../comfy-builder-core" }
-
-rayon = "1.11.0"
-resize = "0.8.8"
-indexmap = "2.11.4"
+pyo3 = { version = "0.26.0" }
+comfy-builder-core = { version = "0.0.4", path = "../comfy-builder-core" }
 inventory = "0.3.21"
 
 [build-dependencies]

@@ -1,46 +1,21 @@
-use crate::options::{AnyOption, Options};
-use proc_macro2::{Ident, TokenTree};
+use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use std::collections::HashMap;
-use syn::{Expr, ExprLit, Field, GenericArgument, Lit, PathArguments, Type, TypePath};
+use syn::{
+    Expr, ExprLit, Field, GenericArgument, Lit, Path, PathArguments, PathSegment, Type, TypePath,
+};
 
-macro_rules! numeric_types {
-    (signed) => {
-        "i8" | "i16" | "i32" | "i64" | "i128" | "isize"
-    };
-    (unsigned) => {
-        "u8" | "u16" | "u32" | "u64" | "u128" | "usize"
-    };
-    (float) => {
-        "f32" | "f64"
-    };
-    () => {
-        numeric_types!(unsigned) | numeric_types!(signed) | numeric_types!(float)
-    };
-}
-
-use numeric_types;
-
-#[derive(Debug)]
-pub struct FieldExtractor<'a> {
+pub struct FieldHelper<'a> {
     field: &'a Field,
 }
 
-impl<'a> From<&'a Field> for FieldExtractor<'a> {
+impl<'a> From<&'a Field> for FieldHelper<'a> {
     fn from(field: &'a Field) -> Self {
-        FieldExtractor { field }
+        FieldHelper { field }
     }
 }
 
-impl<'a> FieldExtractor<'a> {
-    pub fn attributes(&self) -> Option<AnyOption> {
-        self.field
-            .attrs
-            .iter()
-            .filter_map(|attr| attr.meta.require_list().ok())
-            .find_map(|meta| meta.parse_args::<AnyOption>().ok())
-    }
-
+impl<'a> FieldHelper<'a> {
     pub fn named_attributes(&self) -> HashMap<String, &Lit> {
         self.field
             .attrs
@@ -57,107 +32,59 @@ impl<'a> FieldExtractor<'a> {
                     )
                 })
             })
+            .map(|(key, value)| (if key == "doc" { "tooltip".into() } else { key }, value))
             .collect()
-    }
-
-    pub fn options(&self) -> proc_macro2::TokenStream {
-        self.attributes()
-            .map(|option| option.generate_token_stream())
-            .unwrap_or_default()
-            .into()
     }
 
     pub fn property_ident(&self) -> &Ident {
         self.field.ident.as_ref().unwrap()
     }
 
-    pub fn is_string(&self) -> bool {
-        let kind_str = self.value_ident().to_string();
-
-        matches!(kind_str.as_str(), "String")
+    pub fn inner_value_type_call(&self) -> Option<proc_macro2::TokenStream> {
+        if let Type::Path(type_path) = &self.field.ty
+            && let Some(segment) = type_path.path.segments.first()
+                // && segment.ident == "Vec"
+                && let PathArguments::AngleBracketed(args) = &segment.arguments
+                && let Some(GenericArgument::Type(ty)) = args.args.first()
+        {
+            return Some(extract_full_type_as_static_call(ty));
+        }
+        None
     }
 
-    pub fn is_tensor_type(&self) -> bool {
-        let kind_str = self.value_ident().to_string();
-
-        matches!(
-            kind_str.as_str(),
-            numeric_types!() | "Image" | "Mask" | "Latent"
-        )
-    }
-
-    pub fn is_primitive(&self) -> bool {
-        let kind_str = self.value_ident().to_string();
-
-        matches!(kind_str.as_str(), numeric_types!() | "String" | "bool")
-    }
-
-    pub fn is_enum(&self) -> bool {
-        self.field
-            .attrs
-            .iter()
-            .find(|attribute| attribute.meta.path().is_ident("attribute"))
-            .and_then(|attribute| attribute.meta.require_list().ok())
-            .and_then(|meta| {
-                meta.tokens
-                    .clone()
-                    .into_iter()
-                    .find(|token| matches!(token, TokenTree::Ident(ident) if ident == "enum"))
-            })
-            .is_some()
-    }
-
-    pub fn is_hidden(&self) -> bool {
-        matches!(
-            self.value_ident().to_string().as_str(),
-            "UniqueId" | "Prompt" | "ExtraPngInfo" | "DynPrompt"
-        )
+    pub fn value_type_call(&self) -> TokenStream {
+        extract_full_type_as_static_call(&self.field.ty)
     }
 
     /// Return the complete ident as defined on the struct side
-    pub fn output_ident(&self, force_vector: bool) -> proc_macro2::TokenStream {
-        let ident = self.value_ident();
-        let ident = match self.is_wrapped_by_vector() || force_vector {
-            true => quote! { Vec<#ident> },
-            false => quote! { #ident },
+    pub fn output_ident(&self, force_vector: bool) -> TokenStream {
+        let ident = &self.field.ty;
+        let is_optional = self.is_optional();
+        let mut content = quote! { #ident };
+
+        if is_optional {
+            content = match self.inner_value_type_call() {
+                None => content,
+                Some(inner) => quote! { #inner },
+            };
+        }
+
+        let content = match self.is_wrapped_by_vector() {
+            true => quote! { #content },
+            false => {
+                if force_vector {
+                    quote! { Vec<#content> }
+                } else {
+                    quote! { #content }
+                }
+            }
         };
 
         if self.is_optional() {
-            return quote! { Option<#ident> };
+            return quote! { Option<#content> };
         }
 
-        ident
-    }
-
-    pub fn is_wrapped_by_vector(&self) -> bool {
-        self.value_ident_wrapper()
-            .map(|ident| ident.to_string().as_str() == "Vec")
-            .unwrap_or_default()
-    }
-
-    pub fn get_hidden_tokens(&self) -> Option<&'static str> {
-        self.is_hidden()
-            .then(|| match self.value_ident().to_string().as_str() {
-                "UniqueId" => "UNIQUE_ID",
-                "Prompt" => "PROMPT",
-                "ExtraPngInfo" => "EXTRA_PNGINFO",
-                "DynPrompt" => "DYNPROMPT",
-                _ => unreachable!(),
-            })
-    }
-
-    pub fn options_default(&self) -> proc_macro2::TokenStream {
-        match self.value_ident().to_string().as_str() {
-            numeric_types!() => {
-                let ident = self.value_ident();
-
-                quote! {
-                    dict.set_item("min", #ident::MIN)?;
-                    dict.set_item("max", #ident::MAX)?;
-                }
-            }
-            _ => quote! {},
-        }
+        content
     }
 
     pub fn value_ident(&self) -> &Ident {
@@ -186,6 +113,18 @@ impl<'a> FieldExtractor<'a> {
         }
     }
 
+    pub fn is_wrapped_by_vector(&self) -> bool {
+        self.value_ident_wrapper()
+            .map(|ident| ident.to_string().as_str() == "Vec")
+            .unwrap_or_default()
+    }
+    
+    pub fn is_string(&self) -> bool {
+        let kind_str = self.value_ident().to_string();
+
+        matches!(kind_str.as_str(), "String")
+    }
+    
     pub fn is_required(&self) -> bool {
         !self.is_optional()
     }
@@ -208,4 +147,41 @@ fn split_inner_ident(path: &TypePath) -> Option<(&Ident, &Ident)> {
     }
 
     None
+}
+
+fn extract_full_type_as_static_call(value: &Type) -> TokenStream {
+    match value {
+        Type::Path(type_path) => {
+            let path_without_args: Path = Path {
+                leading_colon: type_path.path.leading_colon,
+                segments: type_path
+                    .path
+                    .segments
+                    .iter()
+                    .map(|segment| PathSegment {
+                        ident: segment.ident.clone(),
+                        arguments: PathArguments::None,
+                    })
+                    .collect(),
+            };
+
+            let generic_args: Vec<_> = type_path
+                .path
+                .segments
+                .iter()
+                .filter_map(|segment| match &segment.arguments {
+                    PathArguments::AngleBracketed(args) => Some(args),
+                    _ => None,
+                })
+                .flat_map(|args| args.args.iter())
+                .collect();
+
+            if generic_args.is_empty() {
+                quote! { #path_without_args }
+            } else {
+                quote! { #path_without_args::<#(#generic_args),*> }
+            }
+        }
+        _ => panic!("unsupported type..."),
+    }
 }

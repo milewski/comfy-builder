@@ -85,33 +85,29 @@ checksum = "2fd1289c04a9ea8cb22300a459a72a385d7c73d3259e2ed7dcb2af674838cfa9"
 
 [[package]]
 name = "comfy-builder-core"
-version = "0.0.1"
+version = "0.0.4"
 dependencies = [
  "candle-core",
  "comfy-builder-macros",
- "indexmap",
  "inventory",
+ "num-traits",
  "numpy",
  "pyo3",
 ]
 
 [[package]]
 name = "comfy-builder-custom-nodes"
-version = "0.0.1"
+version = "0.0.4"
 dependencies = [
- "candle-core",
  "comfy-builder-core",
- "indexmap",
  "inventory",
  "pyo3",
- "rayon",
- "resize",
  "toml",
 ]
 
 [[package]]
 name = "comfy-builder-macros"
-version = "0.0.1"
+version = "0.0.4"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -980,22 +976,6 @@ name = "reborrow"
 version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "03251193000f4bd3b042892be858ee50e8b3719f2b08e5833ac4353724632430"
-
-[[package]]
-name = "resize"
-version = "0.8.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87a103d0b47e783f4579149402f7499397ab25540c7a57b2f70487a5d2d20ef0"
-dependencies = [
- "rayon",
- "rgb",
-]
-
-[[package]]
-name = "rgb"
-version = "0.8.52"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c6a884d2998352bb4daf0183589aec883f16a6da1f4dde84d8e2e9a5409a1ce"
 
 [[package]]
 name = "rustc-hash"

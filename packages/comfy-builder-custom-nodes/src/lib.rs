@@ -1,5 +1,7 @@
-#![allow(unused, dead_code)]
+use comfy_builder_core::prelude::boostrap;
 
 mod nodes;
 
-comfy_builder_core::prelude::boostrap!();
+boostrap!(
+    api_version: "latest"
+);

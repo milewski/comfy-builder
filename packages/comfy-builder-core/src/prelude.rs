@@ -1,5 +1,4 @@
-pub use crate::node::{Node, NodeResult};
-pub use crate::tensors::image::Image;
-pub use crate::tensors::mask::Mask;
-pub use crate::tensors::latent::Latent;
-pub use comfy_builder_macros::{Enum, NodeInput, NodeOutput, node, boostrap};
+pub use crate::node::{In, Kwargs, Node, NodeFunctionProvider, Out};
+pub use crate::types::comfy_type::{AsInput, ComfyType};
+pub use crate::types::{image::Image, latent::Latent, mask::Mask};
+pub use comfy_builder_macros::{Enum, NodeInput, NodeOutput, boostrap, node};

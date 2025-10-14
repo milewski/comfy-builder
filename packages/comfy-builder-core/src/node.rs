@@ -1,138 +1,55 @@
-use crate::registry::Registerable;
-use indexmap::IndexMap;
-use pyo3::types::PyDict;
-use pyo3::{Bound, PyClass, PyResult, Python};
-use std::fmt::Display;
+use pyo3::types::{PyCFunction, PyDict, PyList, PyTuple};
+use pyo3::{Bound, PyAny, PyResult, Python};
+use std::error::Error;
+use std::ops::Deref;
 
-pub enum DataType {
-    Int,
-    Float,
-    String,
-    Boolean,
-    Image,
-    Latent,
-    Mask,
-    Audio,
-    Noise,
-    Sampler,
-    Sigmas,
-    Guider,
-    Model,
-    Clip,
-    Vae,
-    Combo,
-    Conditioning,
-    Custom(&'static str),
-}
+pub trait Node<'a>: Default {
+    type In: In<'a>;
+    type Out: Out<'a>;
 
-impl From<&str> for DataType {
-    fn from(value: &str) -> Self {
-        match value {
-            // Primitive
-            "u8" | "u16" | "u32" | "u128" | "u64" | "usize" => DataType::Int,
-            "i8" | "i16" | "i32" | "i128" | "i64" | "isize" => DataType::Int,
-            "f32" | "f64" => DataType::Float,
-            "bool" => DataType::Boolean,
-            "String" => DataType::String,
-
-            // Tensors
-            "Image" => DataType::Image,
-            "Mask" => DataType::Mask,
-            "Latent" => DataType::Latent,
-
-            // Hidden Inputs
-            "UniqueId" => DataType::String,
-            "Prompt" => DataType::String,
-            "DynPrompt" => DataType::String,
-            "ExtraPngInfo" => DataType::String,
-
-            kind => todo!("handle more types {:?}", kind),
-        }
-    }
-}
-
-impl Display for DataType {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let value = match self {
-            DataType::Int => "INT",
-            DataType::Combo => "COMBO",
-            DataType::Float => "FLOAT",
-            DataType::String => "STRING",
-            DataType::Boolean => "BOOLEAN",
-            DataType::Image => "IMAGE",
-            DataType::Latent => "LATENT",
-            DataType::Mask => "MASK",
-            DataType::Audio => "AUDIO",
-            DataType::Noise => "NOISE",
-            DataType::Sampler => "SAMPLER",
-            DataType::Sigmas => "SIGMAS",
-            DataType::Guider => "GUIDER",
-            DataType::Model => "MODEL",
-            DataType::Clip => "CLIP",
-            DataType::Vae => "VAE",
-            DataType::Conditioning => "CONDITIONING",
-            DataType::Custom(name) => name,
-        };
-
-        write!(formatter, "{}", value)
-    }
-}
-
-pub trait InputPort<'a>: From<Option<&'a Bound<'a, PyDict>>> {
-    fn get_inputs(py: Python<'a>) -> PyResult<Bound<'a, PyDict>>;
-
-    fn is_input_list() -> bool;
-}
-
-pub trait OutputPort<'a> {
-    fn get_outputs() -> IndexMap<&'static str, (&'static str, DataType)>;
-
-    fn get_tooltips() -> Vec<&'static str>;
-
-    fn get_output_list() -> Vec<bool>;
-
-    fn values() -> Vec<String> {
-        Self::get_outputs()
-            .into_values()
-            .map(|(_, data_type)| data_type.to_string())
-            .collect()
-    }
-
-    fn labels() -> Vec<&'static str> {
-        Self::get_outputs()
-            .into_values()
-            .map(|(label, _)| label)
-            .collect()
-    }
-
-    fn tooltips() -> Vec<&'static str> {
-        Self::get_tooltips().into_iter().collect()
-    }
-}
-
-pub type NodeResult<'a, T> = Result<<T as Node<'a>>::Out, Box<dyn std::error::Error>>;
-
-pub trait Node<'a>: PyClass + Default + Sync + Send {
-    type In: InputPort<'a>;
-    type Out: OutputPort<'a>;
-
-    const DEPRECATED: bool = false;
-    const CATEGORY: &'static str;
-    const DESCRIPTION: &'static str;
-
-    fn initialize_input(&'a self, kwargs: Option<&'a Bound<'a, PyDict>>) -> Self::In {
-        Self::In::from(kwargs)
-    }
+    type Error: Into<Box<dyn Error + Send + Sync>> + 'static;
 
     fn new() -> Self {
-        Self::default()
+        Default::default()
     }
 
-    fn execute(&self, input: Self::In) -> NodeResult<'a, Self>;
+    fn initialize_inputs(
+        &self,
+        kwargs: Kwargs<'a>,
+    ) -> Result<Self::In, <Self::In as TryFrom<Kwargs<'a>>>::Error> {
+        Self::In::try_from(kwargs)
+    }
+
+    fn execute(&self, input: Self::In) -> Result<Self::Out, Self::Error>;
 }
 
-impl<'a, T: Node<'a>> Registerable for T {}
+pub trait NodeFunctionProvider {
+    fn define_fn(python: Python) -> PyResult<Bound<PyCFunction>>;
+    fn execute_fn(python: Python) -> PyResult<Bound<PyCFunction>>;
+}
 
-pub trait EnumVariants: From<String> {
-    fn variants() -> Vec<&'static str>;
+pub trait In<'py>: TryFrom<Kwargs<'py>> {
+    fn blueprints(python: Python<'py>, io: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyList>>;
+    fn is_list() -> bool;
+}
+
+pub trait Out<'py> {
+    fn blueprints(python: Python<'py>, io: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyList>>;
+    fn to_schema(self, python: Python) -> PyResult<Bound<PyTuple>>;
+}
+
+pub struct Kwargs<'py>(pub Option<Bound<'py, PyDict>>);
+
+impl<'py> From<Option<Bound<'py, PyDict>>> for Kwargs<'py> {
+    fn from(value: Option<Bound<'py, PyDict>>) -> Self {
+        Kwargs(value)
+    }
+}
+
+impl<'a> Deref for Kwargs<'a> {
+    type Target = Option<Bound<'a, PyDict>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }

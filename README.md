@@ -2,11 +2,11 @@
 
 # ✨ ComfyUI Node Builder [![GitHub Stars](https://img.shields.io/github/stars/milewski/comfy-builder?style=social)](https://github.com/milewski/comfy-builder)
 
-A Rust framework for building custom nodes for ComfyUI with enhanced performance and simplified development workflow.
+A Rust framework for building custom nodes for ComfyUI.
 
 </div>
 
-> [!NOTE]  
+> [!WARNING]  
 > While the core functionality is operational, some features from the Python version are still being implemented. 
 > The framework is actively developed and aims to eventually match the full capabilities of the official ComfyUI node system. 
 

@@ -13,7 +13,7 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
     macros::output::node_output_derive(input)
 }
 
-#[proc_macro_derive(NodeInput, attributes(attribute, default, display_name, display_mode, tooltip, min, max, label_on, label_off, control_after_generate))]
+#[proc_macro_derive(NodeInput, attributes(attribute, default, display_name, display_mode, tooltip, min, max, label_on, label_off, multiline, control_after_generate))]
 pub fn node_input_derive(input: TokenStream) -> TokenStream {
     macros::input::node_input_derive(input)
 }

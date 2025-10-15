@@ -1,3 +1,3 @@
-mod primitives;
 mod options;
+mod primitives;
 mod vector;

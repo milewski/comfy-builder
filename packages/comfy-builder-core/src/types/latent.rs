@@ -37,10 +37,7 @@ impl<T: Element + WithDType> Latent<T> {
             .and_then(|noise| Image::<T>::new(noise, &Device::Cpu))
             .ok();
 
-        Ok(Self {
-            samples,
-            noise_mask,
-        })
+        Ok(Self { samples, noise_mask })
     }
 }
 

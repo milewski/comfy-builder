@@ -34,7 +34,7 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
     macros::input::node_input_derive(input)
 }
 
-#[proc_macro_derive(Enum, attributes(label))]
+#[proc_macro_derive(Enum, attributes(display_name))]
 pub fn enum_derive(input: TokenStream) -> TokenStream {
     macros::r#enum::enum_derive(input)
 }

@@ -9,6 +9,7 @@ docker:
 
 clippy:
     cargo clippy --fix --allow-dirty
+    cargo fmt
 
 test:
     cargo test --release

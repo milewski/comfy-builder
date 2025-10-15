@@ -1,12 +1,7 @@
 use proc_macro2::{Ident, TokenStream};
-use quote::__private::ext::RepToTokensExt;
 use quote::quote;
 use std::collections::HashMap;
-use syn::punctuated::Punctuated;
-use syn::token::Comma;
-use syn::{
-    Expr, ExprLit, Field, GenericArgument, Lit, Path, PathArguments, PathSegment, Type, TypePath,
-};
+use syn::{Expr, ExprLit, Field, GenericArgument, Lit, Path, PathArguments, PathSegment, Type, TypePath};
 
 pub struct FieldHelper<'a> {
     field: &'a Field,
@@ -122,18 +117,17 @@ impl<'a> FieldHelper<'a> {
                 None => {
                     let segment = type_path.path.segments.first().unwrap();
 
-                    if segment.ident.to_string() == "Option" {
-                        if let PathArguments::AngleBracketed(args) = &segment.arguments {
-                            if let Some(GenericArgument::Type(inner_type)) = args.args.first() {
-                                match inner_type {
-                                    Type::Path(type_path) => {
-                                        if let Some(segment) = type_path.path.segments.first() {
-                                            return &segment.ident;
-                                        }
-                                    }
-                                    _ => unreachable!("aaaaa"),
+                    if segment.ident == "Option"
+                        && let PathArguments::AngleBracketed(args) = &segment.arguments
+                        && let Some(GenericArgument::Type(inner_type)) = args.args.first()
+                    {
+                        match inner_type {
+                            Type::Path(type_path) => {
+                                if let Some(segment) = type_path.path.segments.first() {
+                                    return &segment.ident;
                                 }
                             }
+                            _ => unreachable!("aaaaa"),
                         }
                     }
 
@@ -148,11 +142,7 @@ impl<'a> FieldHelper<'a> {
         match &self.field.ty {
             Type::Path(type_path) => match type_path.path.get_ident() {
                 Some(_) => None,
-                None => type_path
-                    .path
-                    .segments
-                    .first()
-                    .map(|segment| &segment.ident),
+                None => type_path.path.segments.first().map(|segment| &segment.ident),
             },
             _ => unreachable!(),
         }
@@ -267,12 +257,11 @@ fn first_generic_argument(ty: &Type) -> Option<Type> {
 // Option<T> -> T
 // Option<T<U>> -> T<U>
 fn unwrap_once(type_path: &TypePath) -> Option<&Type> {
-    if let Some(segment) = type_path.path.segments.first() {
-        if let PathArguments::AngleBracketed(bracketed) = &segment.arguments {
-            if let Some(GenericArgument::Type(ty)) = bracketed.args.first() {
-                return Some(ty);
-            }
-        }
+    if let Some(segment) = type_path.path.segments.first()
+        && let PathArguments::AngleBracketed(bracketed) = &segment.arguments
+        && let Some(GenericArgument::Type(ty)) = bracketed.args.first()
+    {
+        return Some(ty);
     }
 
     None
@@ -284,21 +273,20 @@ fn extract_deep_inner_type(ty: &Type) -> proc_macro2::TokenStream {
     match &ty {
         Type::Path(type_path) => match type_path.path.get_ident() {
             None => {
-                if let Some(segment) = type_path.path.segments.first() {
-                    if ["Option", "Vec"].contains(&segment.ident.to_string().as_str()) {
-                        if let Some(unwrapped) = unwrap_once(&type_path) {
-                            return extract_deep_inner_type(unwrapped);
-                        }
-                    }
+                if let Some(segment) = type_path.path.segments.first()
+                    && ["Option", "Vec"].contains(&segment.ident.to_string().as_str())
+                    && let Some(unwrapped) = unwrap_once(type_path)
+                {
+                    return extract_deep_inner_type(unwrapped);
                 }
 
-                extract_full_type_as_static_call(&ty)
+                extract_full_type_as_static_call(ty)
             }
             Some(ident) => {
                 if ident.to_string().as_str() == "Option" {
                     unreachable!("handle option")
                 } else {
-                    extract_full_type_as_static_call(&ty)
+                    extract_full_type_as_static_call(ty)
                 }
             }
         },

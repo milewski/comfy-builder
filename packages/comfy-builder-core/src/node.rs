@@ -13,10 +13,7 @@ pub trait Node<'a>: Default {
         Default::default()
     }
 
-    fn initialize_inputs(
-        &self,
-        kwargs: Kwargs<'a>,
-    ) -> Result<Self::In, <Self::In as TryFrom<Kwargs<'a>>>::Error> {
+    fn initialize_inputs(&self, kwargs: Kwargs<'a>) -> Result<Self::In, <Self::In as TryFrom<Kwargs<'a>>>::Error> {
         Self::In::try_from(kwargs)
     }
 

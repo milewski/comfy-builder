@@ -2,16 +2,15 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{Data, DataEnum, DeriveInput, Expr, ExprLit, Lit, Variant, parse_macro_input};
 
-fn fetch_label(variant: &Variant) -> Option<String> {
+fn fetch_display_name(variant: &Variant) -> Option<String> {
     variant
         .attrs
         .iter()
-        .find(|attribute| attribute.path().is_ident("label"))
+        .find(|attribute| attribute.path().is_ident("display_name"))
         .and_then(|attribute| attribute.meta.require_name_value().ok())
         .and_then(|meta| match &meta.value {
             Expr::Lit(ExprLit {
-                lit: Lit::Str(content),
-                ..
+                lit: Lit::Str(content), ..
             }) => Some(content.value()),
             _ => None,
         })
@@ -31,7 +30,7 @@ pub fn enum_derive(input: TokenStream) -> TokenStream {
         .map(|variant| {
             let ident = &variant.ident;
 
-            if let Some(label) = fetch_label(variant) {
+            if let Some(label) = fetch_display_name(variant) {
                 quote! { #label }
             } else {
                 quote! { stringify!(#ident) }

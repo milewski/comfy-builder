@@ -94,14 +94,8 @@ impl<'py, T: Element + WithDType> IntoPyObject<'py> for Image<T> {
 }
 
 impl<T: Element + WithDType> Image<T> {
-    pub fn from_raw<U: ShapeWithOneHole>(
-        data: Vec<T>,
-        shape: U,
-        device: &Device,
-    ) -> candle_core::Result<Image<T>> {
-        Ok(Image::from_tensor(CandleTensor::from_vec(
-            data, shape, device,
-        )?))
+    pub fn from_raw<U: ShapeWithOneHole>(data: Vec<T>, shape: U, device: &Device) -> candle_core::Result<Image<T>> {
+        Ok(Image::from_tensor(CandleTensor::from_vec(data, shape, device)?))
     }
 }
 

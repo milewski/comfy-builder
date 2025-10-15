@@ -33,11 +33,7 @@ impl Parse for Arguments {
             if allows_attributes.contains(&key.to_string().as_str()) {
                 map.insert(
                     key.to_string(),
-                    value
-                        .into_token_stream()
-                        .to_string()
-                        .trim_matches('"')
-                        .to_string(),
+                    value.into_token_stream().to_string().trim_matches('"').to_string(),
                 );
             } else {
                 Err(syn::Error::new(key.span(), "unrecognized attribute"))?;
@@ -57,16 +53,13 @@ pub fn node(attr: TokenStream, input: TokenStream) -> TokenStream {
     let input_struct = parse_macro_input!(input as DeriveInput);
     let ident = &input_struct.ident;
 
-    let node_id = arguments
-        .get("id")
-        .map(|value| quote! { #value })
-        .unwrap_or_else(|| {
-            let ident_string = ident.to_string().to_snake_case();
+    let node_id = arguments.get("id").map(|value| quote! { #value }).unwrap_or_else(|| {
+        let ident_string = ident.to_string().to_snake_case();
 
-            quote! {
-                format!("{}.{}", crate::__injected::MODULE_NAME, #ident_string)
-            }
-        });
+        quote! {
+            format!("{}.{}", crate::__injected::MODULE_NAME, #ident_string)
+        }
+    });
 
     let display_name = arguments
         .get("display_name")
@@ -85,8 +78,7 @@ pub fn node(attr: TokenStream, input: TokenStream) -> TokenStream {
         .unwrap_or_else(|| quote! { None::<std::string::String> });
 
     let description = arguments
-        .get("doc")
-        .or_else(|| arguments.get("description"))
+        .get("description")
         .map(|value| quote! { Some(#value) })
         .unwrap_or_else(|| quote! { None::<std::string::String> });
 

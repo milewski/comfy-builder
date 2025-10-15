@@ -241,7 +241,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "comfy-builder-template"
+name = "comfy-rusty-nodes"
 version = "0.1.0"
 dependencies = [
  "base64",

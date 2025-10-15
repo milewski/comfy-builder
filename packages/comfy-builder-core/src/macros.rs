@@ -17,4 +17,7 @@ macro_rules! run_node {
             Err(error) => panic!("`{}` node failed: {}", stringify!($node), error),
         }
     }};
+    ($node:ident, $input:expr, return) => {
+        $node::new().execute($input)
+    };
 }

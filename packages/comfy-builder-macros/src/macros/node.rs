@@ -72,7 +72,8 @@ pub fn node(attr: TokenStream, input: TokenStream) -> TokenStream {
         .unwrap_or_else(|| quote! { None::<std::string::String> });
 
     let description = arguments
-        .get("description")
+        .get("doc")
+        .or_else(|| arguments.get("description"))
         .map(|value| quote! { Some(#value) })
         .unwrap_or_else(|| quote! { None::<std::string::String> });
 

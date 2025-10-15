@@ -234,6 +234,7 @@ dependencies = [
 name = "comfy-builder-macros"
 version = "0.0.4"
 dependencies = [
+ "heck",
  "proc-macro2",
  "quote",
  "syn",

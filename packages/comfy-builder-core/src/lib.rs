@@ -5,3 +5,4 @@ pub mod registry;
 pub mod types;
 
 pub use candle_core as candle;
+pub use numpy as numpy;

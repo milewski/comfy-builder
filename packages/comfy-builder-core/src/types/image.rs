@@ -51,11 +51,6 @@ impl<T: Element + WithDType> Image<T> {
             .map_err(|error| PyRuntimeError::new_err(format!("Execution failed: {}", error)))
     }
 
-    /// The dimension size for this tensor on each axis.
-    pub fn dims(&self) -> &[usize] {
-        self.tensor.dims()
-    }
-
     pub fn from_tensor(tensor: CandleTensor) -> Self {
         Self {
             tensor,

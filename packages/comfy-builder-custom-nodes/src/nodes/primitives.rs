@@ -1,3 +1,7 @@
+//!
+//! Test all primitive types to ensure they do not cause crashes or other issues when used.
+//!
+
 use comfy_builder_core::node::Node;
 use comfy_builder_core::prelude::{NodeInput, NodeOutput, node};
 use std::error::Error;
@@ -42,13 +46,10 @@ pub struct Output {
     usize: usize,
 }
 
-#[node(
-    description = "Test all primitive types to ensure they do not cause crashes or other issues when used.",
-    category = "_test"
-)]
+#[node]
 struct Primitives;
 
-impl<'a> Node<'a> for Primitives {
+impl<'py> Node<'py> for Primitives {
     type In = Input;
     type Out = Output;
     type Error = Box<dyn Error + Send + Sync>;

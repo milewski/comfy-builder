@@ -1,3 +1,7 @@
+//!
+//! Verifies that a node can use `()` as its input **or** its output type.
+//!
+
 use comfy_builder_core::node::Node;
 use comfy_builder_core::prelude::node;
 use std::error::Error;
@@ -5,7 +9,7 @@ use std::error::Error;
 #[node]
 struct Unit;
 
-impl<'a> Node<'a> for Unit {
+impl<'py> Node<'py> for Unit {
     type In = ();
     type Out = ();
     type Error = Box<dyn Error + Send + Sync>;

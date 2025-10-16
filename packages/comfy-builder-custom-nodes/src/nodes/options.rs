@@ -1,11 +1,11 @@
-//! 
+//!
 //! Verify that a string option is set to `None` when its value is blank, and to an empty string when it is *not* optional.
 //!
 //! If a user sets an input as `Option<String>`, ComfyUI never supplies an empty string.  
 //! Consequently, we need custom logic that returns `None` when the string is empty.
-//! 
+//!
 //! So this file test that this is the case
-//! 
+//!
 
 use comfy_builder_core::node::Node;
 use comfy_builder_core::prelude::{NodeInput, NodeOutput, node};

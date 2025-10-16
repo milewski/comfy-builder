@@ -96,6 +96,8 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
     }
 
     TokenStream::from(quote! {
+        use pyo3::prelude::*;
+
         impl<'py> comfy_builder_core::node::In<'py> for #name {
             fn blueprints(python: pyo3::Python<'py>, io: &pyo3::Bound<'py, pyo3::PyAny>) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::types::PyList>> {
                 use comfy_builder_core::prelude::AsInput;

@@ -23,13 +23,7 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
 
     for field in fields {
         let property_ident = field.property_ident();
-        let value_type_call = {
-            if field.is_wrapped_by_vector() || field.is_optional() {
-                field.inner_value_type_call().unwrap()
-            } else {
-                field.value_type_call()
-            }
-        };
+        let value_type_call = field.inner_value_skip_option_and_vec();
 
         let mut named_attributes = field.named_attributes();
         let is_optional = field.is_optional();
@@ -77,13 +71,11 @@ pub fn node_input_derive(input: TokenStream) -> TokenStream {
             // So on the Rust side, when an item is not defined as a list but others are,
             // the first input is always retrieved from that list instead.
             if is_list && !field.is_wrapped_by_vector() {
-
                 extract_logic = if is_optional {
                     quote! { #extract_logic.and_then(|list| list.map(|list| list.into_iter().next())) }
                 } else {
                     quote! { #extract_logic.and_then(|list| list.into_iter().next()) }
                 };
-
             }
 
             // If the field is a `String`, strip out empty values so that the

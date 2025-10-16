@@ -18,7 +18,7 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
     if let Fields::Named(fields_named) = fields {
         for field in fields_named.named {
             let field = FieldHelper::from(&field);
-            let value_ident = field.value_ident();
+            let value_ident = field.inner_value_skip_option_and_vec();
             let property_ident = field.property_ident();
             let named_attributes = field.named_attributes();
             let is_list = field.is_wrapped_by_vector();
@@ -41,7 +41,9 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
 
             blueprints.push(quote! {
                 {
-                    let comfy_type = comfy_builder_core::prelude::ComfyType::try_from(stringify!(#value_ident))?;
+                    use comfy_builder_core::prelude::AsInput;
+
+                    let comfy_type = #value_ident::comfy_type();
                     let dict = pyo3::types::PyDict::new(python);
 
                     dict.set_item("is_output_list", #is_list)?;

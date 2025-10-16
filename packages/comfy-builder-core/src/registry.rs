@@ -3,9 +3,7 @@ use pyo3::prelude::PyAnyMethods;
 use pyo3::types::{PyCFunction, PyDict, PyDictMethods};
 use pyo3::{Bound, PyAny, PyResult, Python};
 
-type FactoryFn = for<'py> fn(
-    python: Python<'py>,
-) -> PyResult<(Bound<'py, PyCFunction>, Bound<'py, PyCFunction>)>;
+type FactoryFn = for<'py> fn(python: Python<'py>) -> PyResult<(Bound<'py, PyCFunction>, Bound<'py, PyCFunction>)>;
 
 #[derive(Debug)]
 pub struct NodeRegistration {

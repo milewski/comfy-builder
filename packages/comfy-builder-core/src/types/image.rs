@@ -9,7 +9,7 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 
 #[derive(Clone, Debug)]
-pub struct Image<T = f32> {
+pub struct Image<T: Element + WithDType> {
     tensor: CandleTensor,
     marker: PhantomData<T>,
 }
@@ -49,11 +49,6 @@ impl<T: Element + WithDType> Image<T> {
 
         CandleTensor::from_vec(data, shape, device)
             .map_err(|error| PyRuntimeError::new_err(format!("Execution failed: {}", error)))
-    }
-
-    /// The dimension size for this tensor on each axis.
-    pub fn dims(&self) -> &[usize] {
-        self.tensor.dims()
     }
 
     pub fn from_tensor(tensor: CandleTensor) -> Self {
@@ -99,14 +94,8 @@ impl<'py, T: Element + WithDType> IntoPyObject<'py> for Image<T> {
 }
 
 impl<T: Element + WithDType> Image<T> {
-    pub fn from_raw<U: ShapeWithOneHole>(
-        data: Vec<T>,
-        shape: U,
-        device: &Device,
-    ) -> candle_core::Result<Image<T>> {
-        Ok(Image::from_tensor(CandleTensor::from_vec(
-            data, shape, device,
-        )?))
+    pub fn from_raw<U: ShapeWithOneHole>(data: Vec<T>, shape: U, device: &Device) -> candle_core::Result<Image<T>> {
+        Ok(Image::from_tensor(CandleTensor::from_vec(data, shape, device)?))
     }
 }
 

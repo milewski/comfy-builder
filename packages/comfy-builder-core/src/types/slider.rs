@@ -1,5 +1,5 @@
 use crate::set_defaults;
-use crate::types::comfy_type::{ComfyType, AsInput};
+use crate::types::comfy_type::{AsInput, ComfyType};
 use num_traits::{Bounded, Num};
 use pyo3::conversion::FromPyObjectBound;
 use pyo3::prelude::PyAnyMethods;
@@ -40,11 +40,8 @@ where
             "default" => T::zero(),
         );
 
-        if let (Ok(min), Ok(max), Ok(default)) = (
-            dict.get_item("min"),
-            dict.get_item("max"),
-            dict.get_item("default"),
-        ) {
+        if let (Ok(min), Ok(max), Ok(default)) = (dict.get_item("min"), dict.get_item("max"), dict.get_item("default"))
+        {
             let min = min.extract::<T>()?;
             let max = max.extract::<T>()?;
             let default = default.extract::<T>()?;
@@ -58,10 +55,7 @@ where
             }
         }
 
-        dict.set_item(
-            "display_mode",
-            io.getattr("NumberDisplay")?.getattr("slider")?,
-        )?;
+        dict.set_item("display_mode", io.getattr("NumberDisplay")?.getattr("slider")?)?;
 
         Ok(())
     }

@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
 use quote::quote;
-use syn::{parse_macro_input, LitStr, Token};
+use syn::{LitStr, Token, parse_macro_input};
 
 #[derive(Debug)]
 struct BootstrapArgs {
@@ -38,7 +38,8 @@ pub fn boostrap(input: TokenStream) -> TokenStream {
         use pyo3::types::*;
 
         pub mod __injected {
-            pub static API_VERSION: &str = #api_version;
+            pub static API_VERSION: &'static str = #api_version;
+            pub static MODULE_NAME: &'static str = stringify!(#module_name_ident);
         }
 
         #[pyo3::pyfunction]

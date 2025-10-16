@@ -8,7 +8,7 @@ use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyErr, PyResult, Python};
 use std::ops::Deref;
 
 #[derive(Clone, Debug)]
-pub struct Mask<T = f32>(Image<T>);
+pub struct Mask<T: Element + WithDType>(Image<T>);
 
 impl<'py, T: Element + WithDType> FromPyObject<'py> for Mask<T> {
     fn extract_bound(object: &Bound<'py, PyAny>) -> PyResult<Self> {

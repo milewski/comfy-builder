@@ -1,3 +1,4 @@
+use heck::{ToSnakeCase, ToTitleCase};
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
 use quote::{ToTokens, quote};
@@ -32,11 +33,7 @@ impl Parse for Arguments {
             if allows_attributes.contains(&key.to_string().as_str()) {
                 map.insert(
                     key.to_string(),
-                    value
-                        .into_token_stream()
-                        .to_string()
-                        .trim_matches('"')
-                        .to_string(),
+                    value.into_token_stream().to_string().trim_matches('"').to_string(),
                 );
             } else {
                 Err(syn::Error::new(key.span(), "unrecognized attribute"))?;
@@ -56,15 +53,24 @@ pub fn node(attr: TokenStream, input: TokenStream) -> TokenStream {
     let input_struct = parse_macro_input!(input as DeriveInput);
     let ident = &input_struct.ident;
 
-    let node_id = arguments
-        .get("id")
-        .cloned()
-        .unwrap_or_else(|| ident.to_string());
+    let node_id = arguments.get("id").map(|value| quote! { #value }).unwrap_or_else(|| {
+        let ident_string = ident.to_string().to_snake_case();
+
+        quote! {
+            format!("{}.{}", crate::__injected::MODULE_NAME, #ident_string)
+        }
+    });
 
     let display_name = arguments
         .get("display_name")
-        .map(|value| quote! { Some(#value) })
-        .unwrap_or_else(|| quote! { None::<std::string::String> });
+        .map(|value| quote! { #value })
+        .unwrap_or_else(|| {
+            let ident_string = ident.to_string().to_title_case();
+
+            quote! {
+               #ident_string
+            }
+        });
 
     let category = arguments
         .get("category")
@@ -77,8 +83,7 @@ pub fn node(attr: TokenStream, input: TokenStream) -> TokenStream {
         .unwrap_or_else(|| quote! { None::<std::string::String> });
 
     TokenStream::from(quote! {
-        // use pyo3::prelude::*;
-        use pyo3::IntoPyObjectExt;
+        use pyo3::*;
 
         #[derive(std::default::Default)]
         #input_struct

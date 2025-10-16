@@ -25,7 +25,6 @@ members = [
     "packages/comfy-builder-core",
     "packages/comfy-builder-macros",
     "packages/comfy-builder-custom-nodes",
-    "packages/comfy-rusty-nodes",
 ]
 
 [workspace.dependencies]

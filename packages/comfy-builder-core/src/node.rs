@@ -1,5 +1,5 @@
 use pyo3::types::{PyCFunction, PyDict, PyList, PyTuple};
-use pyo3::{Bound, PyAny, PyResult, Python};
+use pyo3::{Bound, PyAny, PyErr, PyResult, Python};
 use std::error::Error;
 use std::ops::Deref;
 
@@ -48,5 +48,35 @@ impl<'a> Deref for Kwargs<'a> {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+//--- Allow Input / Output to be set as empty unit type
+
+impl<'py> Out<'py> for () {
+    fn blueprints(python: Python<'py>, io: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyList>> {
+        Ok(PyList::empty(python))
+    }
+
+    fn to_schema(self, python: Python) -> PyResult<Bound<PyTuple>> {
+        Ok(PyTuple::empty(python))
+    }
+}
+
+impl<'py> TryFrom<Kwargs<'py>> for () {
+    type Error = PyErr;
+
+    fn try_from(_: Kwargs) -> Result<Self, Self::Error> {
+        Ok(())
+    }
+}
+
+impl<'py> In<'py> for () {
+    fn blueprints(python: Python<'py>, _: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyList>> {
+        Ok(PyList::empty(python))
+    }
+
+    fn is_list() -> bool {
+        false
     }
 }

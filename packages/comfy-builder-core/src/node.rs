@@ -54,7 +54,7 @@ impl<'a> Deref for Kwargs<'a> {
 //--- Allow Input / Output to be set as empty unit type
 
 impl<'py> Out<'py> for () {
-    fn blueprints(python: Python<'py>, io: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyList>> {
+    fn blueprints(python: Python<'py>, _: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyList>> {
         Ok(PyList::empty(python))
     }
 

@@ -1,8 +1,9 @@
 use crate::types::comfy_type::{AsInput, ComfyType};
-use num_traits::ConstZero;
-use pyo3::prelude::{PyAnyMethods, PyDictMethods};
+use num_traits::{Bounded, Num};
+use pyo3::conversion::FromPyObjectBound;
+use pyo3::prelude::PyAnyMethods;
 use pyo3::types::PyDict;
-use pyo3::{Bound, PyAny, PyResult};
+use pyo3::{Bound, IntoPyObject, PyAny, PyResult};
 
 macro_rules! impl_comfy_type {
     ($($primitive:ty => $ctype:expr),*) => {
@@ -13,47 +14,53 @@ macro_rules! impl_comfy_type {
                 }
 
                 fn set_options(dict: &mut Bound<'py, PyDict>, _: &Bound<'py, PyAny>) -> PyResult<()> {
-                    if let Ok(None) = dict.get_item("min") {
-                        dict.set_item("min", Self::MIN)?;
-                    }
-
-                    if let Ok(None) = dict.get_item("max") {
-                        dict.set_item("max", Self::MAX)?;
-                    }
-
-                    if let Ok(None) = dict.get_item("default") {
-                        dict.set_item("default", Self::ZERO)?;
-                    }
-
                     if $ctype == ComfyType::Float {
-                        if let Ok(None) = dict.get_item("step") {
+                        if dict.get_item("step").is_err() {
                             dict.set_item("step", 0.01)?;
                         }
                     }
 
-                    if let (Some(min), Some(max), Some(default)) = (
-                        dict.get_item("min")?,
-                        dict.get_item("max")?,
-                        dict.get_item("default")?,
-                    ) {
-                        let min = min.extract::<Self>()?;
-                        let max = max.extract::<Self>()?;
-                        let default = default.extract::<Self>()?;
-
-                        if default < min {
-                            dict.set_item("default", min)?;
-                        }
-
-                        if default > max {
-                            dict.set_item("default", max)?;
-                        }
-                    }
-
-                    Ok(())
+                    numeric_defaults::<$primitive>(dict)
                 }
             }
         )*
     };
+}
+
+pub fn numeric_defaults<'py, T>(dict: &Bound<'py, PyDict>) -> PyResult<()>
+where
+    T: Num + Bounded + PartialOrd + IntoPyObject<'py> + for<'a> FromPyObjectBound<'a, 'py>,
+{
+    if dict.get_item("min").is_err() {
+        dict.set_item("min", T::min_value())?;
+    }
+
+    if dict.get_item("max").is_err() {
+        dict.set_item("max", T::max_value())?;
+    }
+
+    if dict.get_item("default").is_err() {
+        dict.set_item("default", T::zero())?;
+    }
+
+    if let Ok(min) = dict.get_item("min")
+        && let Ok(max) = dict.get_item("max")
+        && let Ok(default) = dict.get_item("default")
+    {
+        let min = min.extract::<T>()?;
+        let max = max.extract::<T>()?;
+        let default = default.extract::<T>()?;
+
+        if default < min {
+            dict.set_item("default", min)?;
+        }
+
+        if default > max {
+            dict.set_item("default", max)?;
+        }
+    }
+
+    Ok(())
 }
 
 impl_comfy_type!(

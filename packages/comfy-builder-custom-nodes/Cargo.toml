@@ -11,7 +11,6 @@ authors = ["Rafael Milewski <rafael.milewski@gmail.com>"]
 keywords = ["comfy", "comfyui", "comfy-ui"]
 categories = ["development-tools"]
 exclude = [".git", ".github"]
-rust-version = "1.90.0"
 
 [lib]
 name = "comfy_builder_custom_nodes"

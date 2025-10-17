@@ -1,6 +1,6 @@
 use crate::types::comfy_type::{AsInput, ComfyType};
 use candle_core::shape::ShapeWithOneHole;
-use candle_core::{Device, Tensor as CandleTensor, WithDType};
+use candle_core::{Device, Tensor as CandleTensor, Tensor, WithDType};
 use numpy::{Element, PyArray, PyArrayDyn, PyArrayMethods, PyUntypedArrayMethods};
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::PyAnyMethods;
@@ -29,26 +29,9 @@ impl<'py, T: Element + WithDType> AsInput<'py> for Image<T> {
 impl<T: Element + WithDType> Image<T> {
     pub fn new(any: Bound<PyAny>, device: &Device) -> PyResult<Self> {
         Ok(Self {
-            tensor: Self::torch_to_candle(any, device)?,
+            tensor: torch_to_candle::<T>(any, device)?,
             marker: PhantomData,
         })
-    }
-
-    fn torch_to_candle(torch_tensor: Bound<PyAny>, device: &Device) -> PyResult<CandleTensor> {
-        let mut numpy = torch_tensor.call_method0("numpy")?;
-
-        let mut array = numpy.downcast::<PyArrayDyn<T>>()?;
-
-        if !array.is_contiguous() {
-            numpy = numpy.call_method0("copy")?;
-            array = numpy.downcast::<PyArrayDyn<T>>()?;
-        }
-
-        let shape = array.shape().to_vec();
-        let data = array.to_vec()?;
-
-        CandleTensor::from_vec(data, shape, device)
-            .map_err(|error| PyRuntimeError::new_err(format!("Execution failed: {}", error)))
     }
 
     pub fn from_tensor(tensor: CandleTensor) -> Self {
@@ -73,23 +56,7 @@ impl<'py, T: Element + WithDType> IntoPyObject<'py> for Image<T> {
     type Error = PyErr;
 
     fn into_pyobject(self, python: Python<'py>) -> Result<Self::Output, Self::Error> {
-        let tensor = self.into_tensor();
-        let shape = tensor.dims();
-
-        let data: Vec<T> = tensor
-            .flatten_all()
-            .map_err(|error| PyErr::new::<PyRuntimeError, _>(error.to_string()))?
-            .to_vec1::<_>()
-            .map_err(|error| PyErr::new::<PyRuntimeError, _>(error.to_string()))?;
-
-        let array = PyArray::from_iter(python, data)
-            .reshape(shape)
-            .map_err(|error| PyErr::new::<PyRuntimeError, _>(error.to_string()))?;
-
-        let torch = python.import("torch")?;
-        let tensor = torch.getattr("tensor")?.call1((array,))?;
-
-        Ok(tensor)
+        tensor_to_pytensor::<T>(python, self.tensor)
     }
 }
 
@@ -113,4 +80,40 @@ impl<T: Element + WithDType> Deref for Image<T> {
     fn deref(&self) -> &Self::Target {
         &self.tensor
     }
+}
+
+pub fn torch_to_candle<T: Element + WithDType>(torch_tensor: Bound<PyAny>, device: &Device) -> PyResult<CandleTensor> {
+    let mut numpy = torch_tensor.call_method0("numpy")?;
+
+    let mut array = numpy.downcast::<PyArrayDyn<T>>()?;
+
+    if !array.is_contiguous() {
+        numpy = numpy.call_method0("copy")?;
+        array = numpy.downcast::<PyArrayDyn<T>>()?;
+    }
+
+    let shape = array.shape().to_vec();
+    let data = array.to_vec()?;
+
+    CandleTensor::from_vec(data, shape, device)
+        .map_err(|error| PyRuntimeError::new_err(format!("Execution failed: {}", error)))
+}
+
+pub fn tensor_to_pytensor<T: Element + WithDType>(python: Python, tensor: Tensor) -> PyResult<Bound<PyAny>> {
+    let shape = tensor.dims();
+
+    let data: Vec<T> = tensor
+        .flatten_all()
+        .map_err(|error| PyErr::new::<PyRuntimeError, _>(error.to_string()))?
+        .to_vec1::<_>()
+        .map_err(|error| PyErr::new::<PyRuntimeError, _>(error.to_string()))?;
+
+    let array = PyArray::from_iter(python, data)
+        .reshape(shape)
+        .map_err(|error| PyErr::new::<PyRuntimeError, _>(error.to_string()))?;
+
+    let torch = python.import("torch")?;
+    let tensor = torch.getattr("tensor")?.call1((array,))?;
+
+    Ok(tensor)
 }

@@ -5,5 +5,6 @@ pub mod int;
 pub mod latent;
 pub mod mask;
 pub mod seed;
+pub mod sigmas;
 pub mod slider;
 pub mod string;

@@ -1,5 +1,5 @@
 use pyo3::types::PyDict;
-use pyo3::{Bound, FromPyObject, PyAny, PyResult};
+use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyResult};
 use std::fmt::{Display, Formatter};
 
 pub trait AsInput<'py>: FromPyObject<'py> {
@@ -9,6 +9,8 @@ pub trait AsInput<'py>: FromPyObject<'py> {
         Ok(())
     }
 }
+
+pub trait AsOutput<'py>: IntoPyObject<'py> {}
 
 #[derive(PartialEq)]
 pub enum ComfyType {
@@ -21,6 +23,7 @@ pub enum ComfyType {
     Latent,
     Enum,
     Slider,
+    Sigmas,
 }
 
 impl Display for ComfyType {
@@ -37,6 +40,7 @@ impl Display for ComfyType {
                 ComfyType::Latent => "Latent".to_string(),
                 ComfyType::Boolean => "Boolean".to_string(),
                 ComfyType::Enum => "Combo".to_string(),
+                ComfyType::Sigmas => "Sigmas".to_string(),
                 // Custom
                 ComfyType::Slider => "Int".to_string(),
             }

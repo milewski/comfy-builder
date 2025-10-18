@@ -23,7 +23,15 @@ impl Deref for Arguments {
 impl Parse for Arguments {
     fn parse(input: ParseStream) -> parse::Result<Self> {
         let mut map = HashMap::new();
-        let allows_attributes = ["id", "display_name", "category", "description"];
+        let allows_attributes = [
+            "id",
+            "display_name",
+            "category",
+            "description",
+            "is_output",
+            "is_experimental",
+            "is_deprecated",
+        ];
 
         while !input.is_empty() {
             let key: Ident = input.parse()?;
@@ -75,7 +83,7 @@ pub fn node(attr: TokenStream, input: TokenStream) -> TokenStream {
     let category = arguments
         .get("category")
         .map(|value| quote! { Some(#value) })
-        .unwrap_or_else(|| quote! { None::<std::string::String> });
+        .unwrap_or_else(|| quote! { Some("_for_testing") });
 
     let description = arguments
         .get("description")
@@ -143,6 +151,9 @@ pub fn node(attr: TokenStream, input: TokenStream) -> TokenStream {
             }
 
             kwargs.set_item("is_input_list", is_list)?;
+            kwargs.set_item("is_deprecated", #ident::IS_DEPRECATED)?;
+            kwargs.set_item("is_output_node", #ident::IS_OUTPUT_NODE)?;
+            kwargs.set_item("is_experimental", #ident::IS_EXPERIMENTAL)?;
 
             kwargs.set_item("inputs", inputs)?;
             kwargs.set_item("outputs", outputs)?;

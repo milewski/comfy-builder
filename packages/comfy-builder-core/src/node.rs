@@ -9,6 +9,10 @@ pub trait Node: Default {
 
     type Error: Into<Box<dyn Error + Send + Sync>> + 'static;
 
+    const IS_EXPERIMENTAL: bool = false;
+    const IS_OUTPUT_NODE: bool = false;
+    const IS_DEPRECATED: bool = false;
+
     fn new() -> Self {
         Default::default()
     }

@@ -60,9 +60,9 @@ pub fn node_output_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(quote! {
         use pyo3::prelude::*;
 
-        impl<'py> comfy_builder_core::prelude::Out<'py> for #name {
+        impl comfy_builder_core::prelude::Out for #name {
 
-            fn blueprints(python: pyo3::Python<'py>, io: &pyo3::Bound<'py, pyo3::PyAny>) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::types::PyList>> {
+            fn blueprints<'py>(python: pyo3::Python<'py>, io: &pyo3::Bound<'py, pyo3::PyAny>) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::types::PyList>> {
                 pyo3::types::PyList::new(python,[#(#blueprints),*])
             }
 

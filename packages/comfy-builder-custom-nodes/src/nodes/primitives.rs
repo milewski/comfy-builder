@@ -49,7 +49,7 @@ pub struct Output {
 #[node]
 struct Primitives;
 
-impl<'py> Node<'py> for Primitives {
+impl Node for Primitives {
     type In = Input;
     type Out = Output;
     type Error = Box<dyn Error + Send + Sync>;

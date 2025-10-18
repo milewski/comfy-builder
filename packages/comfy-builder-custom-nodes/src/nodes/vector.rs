@@ -36,7 +36,7 @@ pub struct Output {
 #[node]
 struct Vector;
 
-impl<'py> Node<'py> for Vector {
+impl Node for Vector {
     type In = Input;
     type Out = Output;
     type Error = Box<dyn Error + Send + Sync>;

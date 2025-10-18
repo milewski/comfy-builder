@@ -23,7 +23,7 @@ pub struct Output {
 #[node]
 struct Custom;
 
-impl<'py> Node<'py> for Custom {
+impl Node for Custom {
     type In = Input;
     type Out = Output;
     type Error = Box<dyn Error + Send + Sync>;

@@ -3,9 +3,9 @@ use pyo3::{Bound, PyAny, PyErr, PyResult, Python};
 use std::error::Error;
 use std::ops::Deref;
 
-pub trait Node<'a>: Default {
-    type In: In<'a>;
-    type Out: Out<'a>;
+pub trait Node: Default {
+    type In: In;
+    type Out: Out;
 
     type Error: Into<Box<dyn Error + Send + Sync>> + 'static;
 
@@ -13,7 +13,10 @@ pub trait Node<'a>: Default {
         Default::default()
     }
 
-    fn initialize_inputs(&self, kwargs: Kwargs<'a>) -> Result<Self::In, <Self::In as TryFrom<Kwargs<'a>>>::Error> {
+    fn initialize_inputs<'py>(
+        &self,
+        kwargs: Kwargs<'py>,
+    ) -> Result<Self::In, <Self::In as TryFrom<Kwargs<'py>>>::Error> {
         Self::In::try_from(kwargs)
     }
 
@@ -25,13 +28,13 @@ pub trait NodeFunctionProvider {
     fn execute_fn(python: Python) -> PyResult<Bound<PyCFunction>>;
 }
 
-pub trait In<'py>: TryFrom<Kwargs<'py>> {
-    fn blueprints(python: Python<'py>, io: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyList>>;
+pub trait In: for<'py> TryFrom<Kwargs<'py>> {
+    fn blueprints<'py>(python: Python<'py>, io: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyList>>;
     fn is_list() -> bool;
 }
 
-pub trait Out<'py> {
-    fn blueprints(python: Python<'py>, io: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyList>>;
+pub trait Out {
+    fn blueprints<'py>(python: Python<'py>, io: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyList>>;
     fn to_schema(self, python: Python) -> PyResult<Bound<PyTuple>>;
 }
 
@@ -53,8 +56,8 @@ impl<'a> Deref for Kwargs<'a> {
 
 //--- Allow Input / Output to be set as empty unit type
 
-impl<'py> Out<'py> for () {
-    fn blueprints(python: Python<'py>, _: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyList>> {
+impl Out for () {
+    fn blueprints<'py>(python: Python<'py>, _: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyList>> {
         Ok(PyList::empty(python))
     }
 
@@ -71,8 +74,8 @@ impl<'py> TryFrom<Kwargs<'py>> for () {
     }
 }
 
-impl<'py> In<'py> for () {
-    fn blueprints(python: Python<'py>, _: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyList>> {
+impl In for () {
+    fn blueprints<'py>(python: Python<'py>, _: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyList>> {
         Ok(PyList::empty(python))
     }
 

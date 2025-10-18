@@ -28,7 +28,7 @@ pub struct Output {
 #[node]
 struct EnumOption;
 
-impl<'py> Node<'py> for EnumOption {
+impl Node for EnumOption {
     type In = Input;
     type Out = Output;
     type Error = Box<dyn Error + Send + Sync>;

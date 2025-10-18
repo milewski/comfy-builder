@@ -9,7 +9,7 @@ use std::error::Error;
 #[node]
 struct Unit;
 
-impl<'py> Node<'py> for Unit {
+impl Node for Unit {
     type In = ();
     type Out = ();
     type Error = Box<dyn Error + Send + Sync>;

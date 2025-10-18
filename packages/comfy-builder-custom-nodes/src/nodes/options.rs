@@ -26,7 +26,7 @@ pub struct Output {
 #[node]
 struct Options;
 
-impl<'py> Node<'py> for Options {
+impl Node for Options {
     type In = Input;
     type Out = Output;
     type Error = Box<dyn Error + Send + Sync>;

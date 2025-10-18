@@ -1,5 +1,5 @@
 [workspace.package]
-version = "0.0.4"
+version = "0.0.7"
 edition = "2024"
 description = "A system for building custom nodes for ComfyUI in Rust."
 readme = "README.md"
@@ -31,4 +31,4 @@ members = [
 #pyo3 = { version = "0.26.0", features = ["abi3-py312", "experimental-async"] }
 #candle-core = "0.9.1"
 #comfy-builder-macros = { path = "packages/comfy-builder-macros" }
-comfy-builder-core = { version = "0.0.4", path = "packages/comfy-builder-core" }
+comfy-builder-core = { version = "0.0.7", path = "packages/comfy-builder-core" }

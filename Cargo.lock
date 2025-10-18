@@ -85,7 +85,7 @@ checksum = "2fd1289c04a9ea8cb22300a459a72a385d7c73d3259e2ed7dcb2af674838cfa9"
 
 [[package]]
 name = "comfy-builder-core"
-version = "0.0.4"
+version = "0.0.7"
 dependencies = [
  "candle-core",
  "comfy-builder-macros",
@@ -97,7 +97,7 @@ dependencies = [
 
 [[package]]
 name = "comfy-builder-custom-nodes"
-version = "0.0.4"
+version = "0.0.7"
 dependencies = [
  "comfy-builder-core",
  "inventory",
@@ -107,7 +107,7 @@ dependencies = [
 
 [[package]]
 name = "comfy-builder-macros"
-version = "0.0.4"
+version = "0.0.7"
 dependencies = [
  "heck",
  "proc-macro2",
